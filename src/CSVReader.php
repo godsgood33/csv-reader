@@ -93,7 +93,9 @@ class CSVReader implements Iterator
             }
         }
 
-        $this->next();
+        if (!$this->next()) {
+            throw new Exception("There are not data rows in the file");
+        }
     }
 
     /**
