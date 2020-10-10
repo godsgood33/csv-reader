@@ -136,6 +136,10 @@ class CSVReader implements Iterator
 
     public function next()
     {
+        if (feof($this->_fh)) {
+            return false;
+        }
+
         $this->_data = fgetcsv($this->_fh, 0, $this->_options['delimiter'], $this->_options['enclosure']);
         $this->_index++;
     }
