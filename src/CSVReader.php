@@ -94,7 +94,7 @@ class CSVReader implements Iterator
         }
 
         if (!$this->next()) {
-            throw new Exception("There are not data rows in the file");
+            throw new Exception("There are no data rows in the file");
         }
     }
 
@@ -144,6 +144,8 @@ class CSVReader implements Iterator
 
         $this->_data = fgetcsv($this->_fh, 0, $this->_options['delimiter'], $this->_options['enclosure']);
         $this->_index++;
+
+        return true;
     }
 
     public function key()
