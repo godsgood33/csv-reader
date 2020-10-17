@@ -28,7 +28,7 @@ class CSVReader implements Iterator
     /**
      * Header
      *
-     * @var CVSHeader
+     * @var CSVHeader
      */
     private $_header = null;
 
@@ -49,8 +49,14 @@ class CSVReader implements Iterator
     /**
      * Constructor
      *
-     * @param string $filename
-     * @param array $options
+     * @param string $filename filename to read and parse
+     * @param array $options optional array properties to assist in reading the file
+     *
+     * @property $options['delimiter'] string value representing the character used to delimit the CSV fields
+     * @property $options['enclosure'] string value representing the character used to surround fields where the delimiting character is present in the field itself
+     * @property $options['header'] zero-based integer representing the row the header is on
+     *
+     * @throws Exception
      */
     public function __construct(string $filename, ?array $options = [])
     {
@@ -67,7 +73,7 @@ class CSVReader implements Iterator
                 $this->_options['enclosure'] = $options['enclosure'];
             }
 
-            if (isset($options['header'])) {
+            if (isset($options['header']) && preg_match("/^[0-9]+$/", $options['header'])) {
                 $this->_options['header'] = $options['header'];
             }
         }
@@ -81,12 +87,12 @@ class CSVReader implements Iterator
         }
 
         $row = 0;
+        $this->_index = 0;
 
         // loop until you get to the header row
         while ($data = fgetcsv($this->_fh, 0, $this->_options['delimiter'], $this->_options['enclosure'])) {
             if ($row == $this->_options['header']) {
                 $this->_header = new CSVHeader($data);
-                $this->_index = $row + 1;
                 break;
             } else {
                 $row++;
@@ -94,7 +100,7 @@ class CSVReader implements Iterator
         }
 
         if (!$this->next()) {
-            throw new Exception("There are no data rows in the file");
+            throw new Exception("There are no data rows in file $filename");
         }
     }
 
@@ -111,13 +117,22 @@ class CSVReader implements Iterator
     }
 
     /**
-     * Method to return all values
+     * Method to get the header titles
      *
      * @return array
      */
-    public function all()
+    public function getHeaderTitles(): array
     {
-        $headers = $this->_header->all();
+        return $this->_header->getTitles();
+    }
+
+    /**
+     * Method to return an associative array where the with the header => field pairs
+     *
+     * @return array
+     */
+    public function current()
+    {
         $ret = [];
 
         foreach ($this->_header->all() as $h => $row) {
@@ -127,15 +142,11 @@ class CSVReader implements Iterator
         return $ret;
     }
 
-    public function current()
-    {
-        if ($this->_index > $this->_options['header']) {
-            return $this->_index;
-        }
-
-        return null;
-    }
-
+    /**
+     * Read the next row
+     *
+     * @return bool Returns FALSE if you are at the end of the file, otherwise returns TRUE
+     */
     public function next()
     {
         if (feof($this->_fh)) {
@@ -148,18 +159,56 @@ class CSVReader implements Iterator
         return true;
     }
 
+    /**
+     * Return the current row number (excluding the header row)
+     *
+     * @return int
+     */
     public function key()
     {
-        return $this->_index;
+        return $this->_index - $this->_options['header'];
     }
 
+    /**
+     * Start the file over
+     */
     public function rewind()
     {
         fseek($this->_fh, 0);
+
+        $row = 0;
         $this->_index = 0;
+
+        // loop until you get to the header row
+        while ($data = fgetcsv($this->_fh, 0, $this->_options['delimiter'], $this->_options['enclosure'])) {
+            if ($row == $this->_options['header']) {
+                $this->_header = new CSVHeader($data);
+                break;
+            } else {
+                $row++;
+            }
+        }
+
+        $this->next();
     }
 
+    /**
+     * Not sure what this should return
+     *
+     * @return bool
+     */
     public function valid()
     {
+        return true;
+    }
+
+    /**
+     * Close the file
+     *
+     * @return bool
+     */
+    public function close()
+    {
+        return fclose($this->_fh);
     }
 }

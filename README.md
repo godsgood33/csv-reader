@@ -47,10 +47,12 @@ The CSVReader will remove any non-alphanumeric characters `[^a-zA-Z0-9_]`.
 
 After this is done, all you need to do is start looping until the end of the file is reached or the data you're looking for is found.
 
+NOTE: CSVReader will automatically skip to the first row after the header after it is done parsing so DON'T use a `while` loop
+
 ```
 do {
     ...
-} while($reader->next())
+} while($reader->next());
 ```
 
 Inside your loop you can use the header titles as field names to retrieve the data at each column
@@ -60,3 +62,5 @@ do {
     $column1 = $reader->column1;
     $column2 = $reader->column2;
 } while($reader->next());
+```
+

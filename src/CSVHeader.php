@@ -2,7 +2,7 @@
 
 namespace Godsgood33\CSVReader;
 
-use Exception;
+use Godsgood33\CSVReader\Exceptions\InvalidHeaderOrField;
 
 class CSVHeader
 {
@@ -32,11 +32,14 @@ class CSVHeader
         }
 
         if (empty($header) || !count($header)) {
-            throw new Exception("Header array is empty");
+            throw new InvalidHeaderOrField("Header array is empty");
         }
 
         foreach ($header as $row => $h) {
             $h = preg_replace("/[^a-zA-Z0-9_]/", "", $h);
+            if(empty($h)) {
+                throw new InvalidHeaderOrField("Empty header");
+            }
             $this->_header[$h] = $row;
         }
 

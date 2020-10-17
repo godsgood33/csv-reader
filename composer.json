@@ -14,8 +14,8 @@
     ],
     "require": {},
     "autoload": {
-        "classmap": [
-            "src/"
-        ]
+        "psr-4": {
+            "Godsgood33\\CSVReader\\": "src"
+        }
     }
 }
