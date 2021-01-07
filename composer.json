@@ -1,6 +1,6 @@
 {
     "name": "godsgood33/csv-reader",
-    "description": "",
+    "description": "This library simplifies reading CSV files",
     "type": "library",
     "require-dev": {
         "phpunit/phpunit": "^9.4"
