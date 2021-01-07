@@ -85,4 +85,24 @@ class CSVHeader
     {
         return array_values($this->_titles);
     }
+
+    /**
+     * Method to check that all required headers are present in the file
+     *
+     * @param array $req_headers
+     *      An array of headers that are required
+     *
+     * @return bool
+     *      Returns TRUE only if ALL required headers are present, otherwise FALSE
+     */
+    public function checkHeaders(array $req_headers): bool
+    {
+        foreach ($req_headers as $h) {
+            if (!in_array($h, array_keys($this->_header))) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }

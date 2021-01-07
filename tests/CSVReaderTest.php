@@ -125,4 +125,18 @@ final class CSVReaderTest extends PHPUnit\Framework\TestCase
         $this->csvreader = new CSVReader(__DIR__ . "/single_header_file.csv");
         $this->assertEquals("value 1", $this->csvreader->column1);
     }
+
+    public function testRequiredHeaderAllPresent()
+    {
+        $req_headers = ["Item","SKU","Qty","Price","Cost"];
+        $this->csvreader = new CSVReader(__DIR__ . "/Example.csv", ['required_headers' => $req_headers]);
+        $this->assertInstanceOf("Godsgood33\CSVReader\CSVReader", $this->csvreader);
+    }
+
+    public function testRequiredHeaderOneMissing()
+    {
+        $this->expectException(InvalidHeaderOrField::class);
+        $req_headers = ["Item","SKU","Qty","Price","Cost","MissingField"];
+        $this->csvreader = new CSVReader(__DIR__ . "/Example.csv", ['required_headers' => $req_headers]);
+    }
 }

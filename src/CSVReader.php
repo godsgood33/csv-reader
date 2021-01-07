@@ -3,6 +3,7 @@
 namespace Godsgood33\CSVReader;
 
 use Exception;
+use Godsgood33\CSVReader\Exceptions\InvalidHeaderOrField;
 use Iterator;
 
 /**
@@ -27,7 +28,7 @@ class CSVReader implements Iterator
     private array $_options = [
         'delimiter' => ',',
         'enclosure' => '"',
-        'header' => 0
+        'header' => 0,
     ];
 
     /**
@@ -57,9 +58,10 @@ class CSVReader implements Iterator
      * @param string $filename filename to read and parse
      * @param array $options optional array properties to assist in reading the file
      *
-     * @property $options['delimiter'] string value representing the character used to delimit the CSV fields
-     * @property $options['enclosure'] string value representing the character used to surround fields where the delimiting character is present in the field itself
-     * @property $options['header'] zero-based integer representing the row the header is on
+     * @property string $options['delimiter'] string value representing the character used to delimit the CSV fields
+     * @property string $options['enclosure'] string value representing the character used to surround fields where the delimiting character is present in the field itself
+     * @property int $options['header'] zero-based integer representing the row the header is on
+     * @property array $options['required_headers'] an array of header fields that are required in the file
      *
      * @throws Exception
      */
@@ -82,6 +84,10 @@ class CSVReader implements Iterator
             if (isset($options['header']) && preg_match("/^[0-9]+$/", $options['header'])) {
                 $this->_options['header'] = $options['header'];
             }
+
+            if (isset($options['required_headers']) && is_countable($options['required_headers'])) {
+                $this->_options['required_headers'] = $options['required_headers'];
+            }
         }
 
         // open the file and store the handler
@@ -97,6 +103,12 @@ class CSVReader implements Iterator
                 break;
             } else {
                 $row++;
+            }
+        }
+
+        if (isset($this->_options['required_headers'])) {
+            if (!$this->_header->checkHeaders($this->_options['required_headers'])) {
+                throw new InvalidHeaderOrField("Missing Headers");
             }
         }
 
