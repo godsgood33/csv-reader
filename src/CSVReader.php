@@ -5,6 +5,11 @@ namespace Godsgood33\CSVReader;
 use Exception;
 use Iterator;
 
+/**
+ * Class to read CSV files using the header row as the field title
+ *
+ * @author Ryan Prather <godsgood3@gmail.com>
+ */
 class CSVReader implements Iterator
 {
     /**
@@ -19,7 +24,7 @@ class CSVReader implements Iterator
      *
      * @var array
      */
-    private $_options = [
+    private array $_options = [
         'delimiter' => ',',
         'enclosure' => '"',
         'header' => 0
@@ -30,21 +35,21 @@ class CSVReader implements Iterator
      *
      * @var CSVHeader
      */
-    private $_header = null;
+    private ?CSVHeader $_header = null;
 
     /**
      * Index of the row
      *
-     * @var integer
+     * @var int
      */
-    private $_index = 0;
+    private int $_index = 0;
 
     /**
      * Array to store the data in the row
      *
      * @var array
      */
-    private $_data = [];
+    private array $_data = [];
 
     /**
      * Constructor
@@ -64,6 +69,7 @@ class CSVReader implements Iterator
             throw new Exception("File does not exist or is not readable");
         }
 
+        // check to see if any options were passed in
         if (is_array($options) && count($options)) {
             if (isset($options['delimiter'])) {
                 $this->_options['delimiter'] = $options['delimiter'];
@@ -80,11 +86,6 @@ class CSVReader implements Iterator
 
         // open the file and store the handler
         $this->_fh = fopen($filename, "r");
-
-        // check that the handler contains a reference to the file
-        if (!is_resource($this->_fh)) {
-            throw new Exception("Was not able to open file");
-        }
 
         $row = 0;
         $this->_index = 0;
@@ -113,7 +114,11 @@ class CSVReader implements Iterator
      */
     public function __get(string $field)
     {
-        return $this->_data[$this->_header->{$field}] ?? null;
+        if (($header = $this->_header->__get($field)) !== null) {
+            return $this->_data[$header];
+        }
+
+        return $header;
     }
 
     /**
@@ -166,6 +171,7 @@ class CSVReader implements Iterator
      */
     public function key()
     {
+        // start at the current row index and then subtract whatever the header row is supposed to be on
         return $this->_index - $this->_options['header'];
     }
 
