@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . "/vendor/autoload.php";
 
+use Godsgood33\CSVReader\CSVHeader;
 use Godsgood33\CSVReader\CSVReader;
 use Godsgood33\CSVReader\Exceptions\InvalidHeaderOrField;
 
@@ -100,5 +101,28 @@ final class CSVReaderTest extends PHPUnit\Framework\TestCase
     {
         $this->expectException(InvalidHeaderOrField::class);
         $this->csvreader = new CSVReader(__DIR__ . "/empty_header.csv");
+    }
+
+    public function testEmptyHeaderArray()
+    {
+        $arr = [];
+        $this->expectException(InvalidHeaderOrField::class);
+        $header = new CSVHeader($arr);
+    }
+
+    public function testRewindFileWithHeaderOnSecondRow()
+    {
+        $this->csvreader = new CSVReader(__DIR__ . "/header_on_second_line.csv", ['header' => 1]);
+        $this->assertEquals("row 1-1", $this->csvreader->header1);
+        $this->csvreader->next();
+        $this->assertEquals("row 2-2", $this->csvreader->header2);
+        $this->csvreader->rewind();
+        $this->assertEquals("row 1-2", $this->csvreader->header2);
+    }
+
+    public function testSingleHeaderFile()
+    {
+        $this->csvreader = new CSVReader(__DIR__ . "/single_header_file.csv");
+        $this->assertEquals("value 1", $this->csvreader->column1);
     }
 }
