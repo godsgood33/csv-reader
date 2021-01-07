@@ -4,6 +4,11 @@ namespace Godsgood33\CSVReader;
 
 use Godsgood33\CSVReader\Exceptions\InvalidHeaderOrField;
 
+/**
+ * Class to store the header data
+ *
+ * @author Ryan Prather <godsgood33@gmail.com>
+ */
 class CSVHeader
 {
     /**
@@ -24,25 +29,26 @@ class CSVHeader
      * Constructor method
      *
      * @param array $header
+     *
+     * @throws InvalidHeaderOrField
      */
-    public function __construct($header)
+    public function __construct(array $header)
     {
-        if (is_string($header)) {
-            return null;
-        }
-
+        // check that there is valid header data
         if (empty($header) || !count($header)) {
             throw new InvalidHeaderOrField("Header array is empty");
         }
 
+        // loop through each header field to strip out invalid characters and reverse the key/value pairs to get the index of each header field
         foreach ($header as $row => $h) {
             $h = preg_replace("/[^a-zA-Z0-9_]/", "", $h);
-            if(empty($h)) {
+            if (empty($h)) {
                 throw new InvalidHeaderOrField("Empty header");
             }
             $this->_header[$h] = $row;
         }
 
+        // store the original header titles
         $this->_titles = $header;
     }
 
