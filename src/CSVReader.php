@@ -2,9 +2,12 @@
 
 namespace Godsgood33\CSVReader;
 
+use ErrorException;
 use Exception;
-use Godsgood33\CSVReader\Exceptions\InvalidHeaderOrField;
 use Iterator;
+
+use Godsgood33\CSVReader\Exceptions\InvalidHeaderOrField;
+use Godsgood33\CSVReader\Exceptions\FileException;
 
 /**
  * Class to read CSV files using the header row as the field title
@@ -63,12 +66,15 @@ class CSVReader implements Iterator
      * @property int $options['header'] zero-based integer representing the row the header is on
      * @property array $options['required_headers'] an array of header fields that are required in the file
      *
-     * @throws Exception
+     * @throws FileException
+     * @throws InvalidHeaderOrField
      */
     public function __construct(string $filename, ?array $options = [])
     {
+        set_error_handler([$this, 'log_error']);
+
         if (!file_exists($filename) || !is_readable($filename)) {
-            throw new Exception("File does not exist or is not readable");
+            throw new FileException("File does not exist or is not readable");
         }
 
         // check to see if any options were passed in
@@ -113,7 +119,7 @@ class CSVReader implements Iterator
         }
 
         if (!$this->next()) {
-            throw new Exception("There are no data rows in file $filename");
+            throw new FileException("There are no data rows in file $filename");
         }
     }
 
@@ -166,11 +172,17 @@ class CSVReader implements Iterator
      */
     public function next()
     {
-        if (feof($this->_fh)) {
+        if (!is_resource($this->_fh)) {
+            throw new FileException('File is no longer open');
+        }
+        $tmp = fgetcsv($this->_fh, 0, $this->_options['delimiter'], $this->_options['enclosure'], '\\');
+        if (feof($this->_fh) && !is_array($tmp)) {
+            return false;
+        } elseif (!is_array($tmp)) {
             return false;
         }
 
-        $this->_data = fgetcsv($this->_fh, 0, $this->_options['delimiter'], $this->_options['enclosure']);
+        $this->_data = $tmp;
         $this->_index++;
 
         return true;
@@ -228,5 +240,10 @@ class CSVReader implements Iterator
     public function close()
     {
         return fclose($this->_fh);
+    }
+
+    public function log_error($num, $str, $file, $line, $context = null)
+    {
+        throw new ErrorException($str, 0, $num, $file, $line);
     }
 }

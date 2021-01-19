@@ -6,6 +6,7 @@ require_once dirname(__DIR__) . "/vendor/autoload.php";
 
 use Godsgood33\CSVReader\CSVHeader;
 use Godsgood33\CSVReader\CSVReader;
+use Godsgood33\CSVReader\Exceptions\FileException;
 use Godsgood33\CSVReader\Exceptions\InvalidHeaderOrField;
 
 /**
@@ -13,6 +14,9 @@ use Godsgood33\CSVReader\Exceptions\InvalidHeaderOrField;
  */
 final class CSVReaderTest extends PHPUnit\Framework\TestCase
 {
+    /**
+     * @var CSVReader
+     */
     private $csvreader = null;
 
     protected function setUp(): void
@@ -69,7 +73,7 @@ final class CSVReaderTest extends PHPUnit\Framework\TestCase
 
     public function testReadEmptyFile()
     {
-        $this->expectException(Exception::class);
+        $this->expectException(FileException::class);
         $this->csvreader = new CSVReader(__DIR__ . "/empty_file.csv");
     }
 
