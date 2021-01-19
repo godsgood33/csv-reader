@@ -71,8 +71,6 @@ class CSVReader implements Iterator
      */
     public function __construct(string $filename, ?array $options = [])
     {
-        set_error_handler([$this, 'log_error']);
-
         if (!file_exists($filename) || !is_readable($filename)) {
             throw new FileException("File does not exist or is not readable");
         }
@@ -239,11 +237,10 @@ class CSVReader implements Iterator
      */
     public function close()
     {
-        return fclose($this->_fh);
-    }
+        if (is_resource($this->_fh)) {
+            return fclose($this->_fh);
+        }
 
-    public function log_error($num, $str, $file, $line, $context = null)
-    {
-        throw new ErrorException($str, 0, $num, $file, $line);
+        return false;
     }
 }
