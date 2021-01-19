@@ -40,7 +40,7 @@ $reader = new CSVReader($csvFilename);
 If your file has different than the standard delimiter, enclosure, or the header row is not row 1 (0 based, so actually row 0), then you can alternatively pass in an array of options.
 
 ```
-$reader = new CSVReader($csvFilename, ['delimiter' => ';', 'enclosure' => "'", 'header' => 2]);
+$reader = new CSVReader($csvFilename, ['delimiter' => ';', 'enclosure' => "'", 'header' => 1]);
 ```
 
 The CSVReader will remove any non-alphanumeric characters `[^a-zA-Z0-9_]`.
@@ -64,3 +64,12 @@ do {
 } while($reader->next());
 ```
 
+If there are required headers that you must have in your file you can specify them in the 'required_headers' option passed in at instantiation time.
+
+```
+$csvreader = new CSVReader('file.csv', ['required_headers' => [
+    'name', 'phone', 'email'
+]]);
+```
+
+This will throw and error the required headers are missing.  The required headers need to be formatted just like the headers will be once all invalid characters are removed.

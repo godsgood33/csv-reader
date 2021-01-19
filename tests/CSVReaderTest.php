@@ -139,7 +139,7 @@ final class CSVReaderTest extends PHPUnit\Framework\TestCase
 
     public function testRequiredHeaderOneMissing()
     {
-        $this->expectException(InvalidHeaderOrField::class);
+        $this->expectExceptionMessage("Missing Headers (Item,SKU,Qty,Price,Cost,MissingField)");
         $req_headers = ["Item","SKU","Qty","Price","Cost","MissingField"];
         $this->csvreader = new CSVReader(__DIR__ . "/Example.csv", ['required_headers' => $req_headers]);
     }

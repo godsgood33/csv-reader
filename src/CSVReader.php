@@ -114,7 +114,7 @@ class CSVReader implements Iterator
 
         if (isset($this->_options['required_headers'])) {
             if (!$this->_header->checkHeaders($this->_options['required_headers'])) {
-                throw new InvalidHeaderOrField("Missing Headers");
+                throw new InvalidHeaderOrField("Missing Headers (".implode(",", $this->_options['required_headers']).")");
             }
         }
 
