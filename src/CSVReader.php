@@ -189,6 +189,21 @@ class CSVReader implements Iterator
     }
 
     /**
+     * Method to get the aliases
+     *
+     * @return array
+     */
+    public function getAliases()
+    {
+        if (isset($this->_options['alias']) &&
+            is_countable($this->_options['alias'])) {
+            return $this->_options['alias'];
+        }
+
+        return null;
+    }
+
+    /**
      * Method to get the header titles
      *
      * @return array
