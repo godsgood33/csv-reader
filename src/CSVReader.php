@@ -2,8 +2,6 @@
 
 namespace Godsgood33\CSVReader;
 
-use ErrorException;
-use Exception;
 use Iterator;
 
 use Godsgood33\CSVReader\Exceptions\InvalidHeaderOrField;
@@ -11,6 +9,8 @@ use Godsgood33\CSVReader\Exceptions\FileException;
 
 /**
  * Class to read CSV files using the header row as the field title
+ *
+ * @property int $lineCount
  *
  * @author Ryan Prather <godsgood3@gmail.com>
  */
@@ -58,20 +58,34 @@ class CSVReader implements Iterator
     /**
      * Constructor
      *
-     * @param string $filename filename to read and parse
-     * @param array $options optional array properties to assist in reading the file
+     * @param string $filename
+     *      filename to read and parse
+     * @param array $options
+     *      optional array properties to assist in reading the file
      *
-     * @property string $options['delimiter'] string value representing the character used to delimit the CSV fields
-     * @property string $options['enclosure'] string value representing the character used to surround fields where the delimiting character is present in the field itself
-     * @property int $options['header'] zero-based integer representing the row the header is on
-     * @property array $options['required_headers'] an array of header fields that are required in the file
+     * @property string $options['delimiter']
+     *      string value representing the character used to delimit the CSV fields
+     * @property string $options['enclosure']
+     *      string value representing the character used to surround fields where the delimiting character
+     *      is present in the field itself
+     * @property int $options['header']
+     *      zero-based integer representing the row the header is on
+     * @property array $options['required_headers']
+     *      an array of header fields that are required in the file
+     * @property array $options['alias']
+     *      array of aliases and the field header they link to
      *
      * @throws FileException
      * @throws InvalidHeaderOrField
      */
     public function __construct(string $filename, ?array $options = [])
     {
-        if (!file_exists($filename) || !is_readable($filename)) {
+        if (substr($filename, 0, 4) == 'http') {
+            $res = @get_headers($filename);
+            if ($res[0] != 'HTTP/1.1 200 OK') {
+                throw new FileException("Unable to access remote file");
+            }
+        } elseif (!file_exists($filename) ||!is_readable($filename)) {
             throw new FileException("File does not exist or is not readable");
         }
 
@@ -92,6 +106,10 @@ class CSVReader implements Iterator
             if (isset($options['required_headers']) && is_countable($options['required_headers'])) {
                 $this->_options['required_headers'] = $options['required_headers'];
             }
+
+            if (isset($options['alias']) && is_countable($options['alias'])) {
+                $this->_options['alias'] = $options['alias'];
+            }
         }
 
         // open the file and store the handler
@@ -110,9 +128,12 @@ class CSVReader implements Iterator
             }
         }
 
+        $this->lineCount = self::getLineCount($filename) - ($row + 1);
+
         if (isset($this->_options['required_headers'])) {
             if (!$this->_header->checkHeaders($this->_options['required_headers'])) {
-                throw new InvalidHeaderOrField("Missing Headers (".implode(",", $this->_options['required_headers']).")");
+                throw new InvalidHeaderOrField("Missing Headers (".
+                    implode(",", $this->_options['required_headers']).")");
             }
         }
 
@@ -130,11 +151,41 @@ class CSVReader implements Iterator
      */
     public function __get(string $field)
     {
-        if (($header = $this->_header->__get($field)) !== null) {
+        if ($field == 'lineCount') {
+            return $this->lineCount;
+        }
+        
+        $alias = $this->hasAlias($field);
+
+        if ($alias) {
+            $field = $alias;
+        }
+
+        $header = $this->_header->__get($field);
+
+        if ($header !== null) {
             return $this->_data[$header];
         }
 
         return $header;
+    }
+
+    /**
+     * Method to check if there is an alias
+     *
+     * @param string $alias
+     *
+     * @return null|string
+     */
+    public function hasAlias(string $alias)
+    {
+        if (isset($this->_options['alias']) &&
+            is_array($this->_options['alias']) &&
+            isset($this->_options['alias'][$alias])) {
+            return $this->_options['alias'][$alias];
+        }
+
+        return null;
     }
 
     /**
@@ -175,8 +226,6 @@ class CSVReader implements Iterator
         }
         $tmp = fgetcsv($this->_fh, 0, $this->_options['delimiter'], $this->_options['enclosure'], '\\');
         if (feof($this->_fh) && !is_array($tmp)) {
-            return false;
-        } elseif (!is_array($tmp)) {
             return false;
         }
 
@@ -242,5 +291,22 @@ class CSVReader implements Iterator
         }
 
         return false;
+    }
+
+    /**
+     * Get line count
+     *
+     * @return int
+     */
+    public static function getLineCount(string $file): int
+    {
+        $count = 0;
+        $h = fopen($file, "r");
+        while (!feof($h)) {
+            fgetcsv($h);
+            $count++;
+        }
+
+        return $count;
     }
 }

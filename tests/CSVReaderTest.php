@@ -67,8 +67,18 @@ final class CSVReaderTest extends PHPUnit\Framework\TestCase
 
     public function testOptions()
     {
-        $this->csvreader = new CSVReader(__DIR__ . "/Example.csv", ['delimiter' => ',', 'enclosure' => '"', 'header' => 1]);
+        $this->csvreader = new CSVReader(
+            __DIR__ . "/Example.csv",
+            [
+                'delimiter' => ',', 'enclosure' => '"', 'header' => 1
+            ]
+        );
         $this->assertInstanceOf("Godsgood33\CSVReader\CSVReader", $this->csvreader);
+    }
+
+    public function testGetLineCount()
+    {
+        $this->assertEquals(2, $this->csvreader->lineCount);
     }
 
     public function testReadEmptyFile()
@@ -149,5 +159,52 @@ final class CSVReaderTest extends PHPUnit\Framework\TestCase
         $this->expectException(FileException::class);
         $this->csvreader->close();
         $this->csvreader->next();
+    }
+
+    public function testHeaderAliases()
+    {
+        $this->csvreader = new CSVReader(__DIR__."/Example.csv", [
+            'alias' => [
+                'item' => 'Item',
+                'id' => 'SKU',
+                'qty' => 'Qty',
+                'cost' => 'Cost',
+                'price' => 'Price',
+            ]
+        ]);
+
+        $this->assertEquals('HPSS', $this->csvreader->id);
+    }
+
+    public function testInvalidHeaderAlias()
+    {
+        $this->csvreader = new CSVReader(__DIR__."/Example.csv", [
+            'alias' => [
+                'item' => 'frank',
+                'id' => 'SKU',
+                'qty' => 'Qty',
+                'cost' => 'Cost',
+                'price' => 'Price',
+            ]
+        ]);
+
+        $this->assertNull($this->csvreader->item);
+    }
+
+    public function testURLCSVReader()
+    {
+        $this->csvreader = new CSVReader(
+            "https://support.staffbase.com/hc/en-us/article_attachments/360009197031/username.csv",
+            [
+                'delimiter' => ';'
+            ]
+        );
+        $this->assertEquals('booker12', $this->csvreader->Username);
+    }
+
+    public function testInvalidURL()
+    {
+        $this->expectException(FileException::class);
+        $this->csvreader = new CSVReader("http://www.example.com/example.csv");
     }
 }
