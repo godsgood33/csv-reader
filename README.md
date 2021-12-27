@@ -1,7 +1,7 @@
 # CSV Reader
 
-[![Build Status](https://scrutinizer-ci.com/g/godsgood33/csv-reader/badges/build.png?b=master)](https://scrutinizer-ci.com/g/godsgood33/csv-reader/build-status/master)
-[![Code Coverage](https://scrutinizer-ci.com/g/godsgood33/csv-reader/badges/coverage.png?b=master)](https://scrutinizer-ci.com/g/godsgood33/csv-reader/?branch=master)
+[![Build Status](https://scrutinizer-ci.com/g/godsgood33/csv-reader/badges/build.png?b=main)](https://scrutinizer-ci.com/g/godsgood33/csv-reader/build-status/main)
+[![Code Coverage](https://scrutinizer-ci.com/g/godsgood33/csv-reader/badges/coverage.png?b=main)](https://scrutinizer-ci.com/g/godsgood33/csv-reader/?branch=main)
 
 The purpose of this library is to simplify reading and parsing CSV files.  I have parsed CSV files so many times and there is not really an easy way to do it.  You have to know the index of the row you want to insert and it would be so much more readable if you could just use the header title itself as the field index.  A while ago, I started reading the header row, flipping the array so that the index of the row elements is now the value of the field index.
 
