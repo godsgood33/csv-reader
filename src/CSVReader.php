@@ -28,11 +28,7 @@ class CSVReader implements Iterator
      *
      * @var array
      */
-    private array $_options = [
-        'delimiter' => ',',
-        'enclosure' => '"',
-        'header' => 0,
-    ];
+    private array $_options = [];
 
     /**
      * Header
@@ -54,6 +50,13 @@ class CSVReader implements Iterator
      * @var array
      */
     private array $_data = [];
+
+    /**
+     * Variable to store the filename that is being parsed
+     *
+     * @var string
+     */
+    private string $filename;
 
     /**
      * Constructor
@@ -80,66 +83,23 @@ class CSVReader implements Iterator
      */
     public function __construct(string $filename, ?array $options = [])
     {
-        if (substr($filename, 0, 4) == 'http') {
-            $res = @get_headers($filename);
-            if ($res[0] != 'HTTP/1.1 200 OK') {
-                throw new FileException("Unable to access remote file");
-            }
-        } elseif (!file_exists($filename) ||!is_readable($filename)) {
-            throw new FileException("File does not exist or is not readable");
-        }
-
-        // check to see if any options were passed in
-        if (is_array($options) && count($options)) {
-            if (isset($options['delimiter'])) {
-                $this->_options['delimiter'] = $options['delimiter'];
-            }
-
-            if (isset($options['enclosure'])) {
-                $this->_options['enclosure'] = $options['enclosure'];
-            }
-
-            if (isset($options['header']) && preg_match("/^[0-9]+$/", $options['header'])) {
-                $this->_options['header'] = $options['header'];
-            }
-
-            if (isset($options['required_headers']) && is_countable($options['required_headers'])) {
-                $this->_options['required_headers'] = $options['required_headers'];
-            }
-
-            if (isset($options['alias']) && is_countable($options['alias'])) {
-                $this->_options['alias'] = $options['alias'];
-            }
-        }
+        $this->_options = [
+            'delimiter' => ',',
+            'enclosure' => '"',
+            'header' => 0,
+            'required_headers' => [],
+            'alias' => [],
+        ];
+        $this->checkFile($filename);
+        $this->checkOptions($options);
+        $this->filename = $filename;
 
         // open the file and store the handler
-        $this->_fh = fopen($filename, "r");
+        $this->_fh = fopen($this->filename, "r");
 
-        $row = 0;
-        $this->_index = 0;
+        $this->setHeader();
 
-        // loop until you get to the header row
-        while ($data = fgetcsv($this->_fh, 0, $this->_options['delimiter'], $this->_options['enclosure'])) {
-            if ($row == $this->_options['header']) {
-                $this->_header = new CSVHeader($data);
-                break;
-            } else {
-                $row++;
-            }
-        }
-
-        $this->lineCount = self::getLineCount($filename) - ($row + 1);
-
-        if (isset($this->_options['required_headers'])) {
-            if (!$this->_header->checkHeaders($this->_options['required_headers'])) {
-                throw new InvalidHeaderOrField("Missing Headers (".
-                    implode(",", $this->_options['required_headers']).")");
-            }
-        }
-
-        if (!$this->next()) {
-            throw new FileException("There are no data rows in file $filename");
-        }
+        $this->next();
     }
 
     /**
@@ -179,9 +139,7 @@ class CSVReader implements Iterator
      */
     public function hasAlias(string $alias)
     {
-        if (isset($this->_options['alias']) &&
-            is_array($this->_options['alias']) &&
-            isset($this->_options['alias'][$alias])) {
+        if (isset($this->_options['alias'][$alias])) {
             return $this->_options['alias'][$alias];
         }
 
@@ -191,12 +149,11 @@ class CSVReader implements Iterator
     /**
      * Method to get the aliases
      *
-     * @return array
+     * @return array|null
      */
     public function getAliases()
     {
-        if (isset($this->_options['alias']) &&
-            is_countable($this->_options['alias'])) {
+        if (count($this->_options['alias'])) {
             return $this->_options['alias'];
         }
 
@@ -211,6 +168,79 @@ class CSVReader implements Iterator
     public function getHeaderTitles(): array
     {
         return $this->_header->getTitles();
+    }
+
+    /**
+     * Method to check the file
+     *
+     * @param string $filename
+     *
+     * @throws FileException
+     */
+    private function checkFile(string $filename)
+    {
+        if (substr($filename, 0, 4) == 'http') {
+            $res = @get_headers($filename);
+            if ($res[0] != 'HTTP/1.1 200 OK') {
+                throw new FileException("Unable to access remote file");
+            }
+        } elseif (!file_exists($filename) ||!is_readable($filename)) {
+            throw new FileException("File does not exist or is not readable");
+        }
+    }
+
+    /**
+     * Method to check the options
+     *
+     * @param array $options
+     */
+    private function checkOptions(?array $options)
+    {
+        // check to see if any options were passed in
+        if (is_array($options) && count($options)) {
+            if (isset($options['delimiter'])) {
+                $this->_options['delimiter'] = $options['delimiter'];
+            }
+
+            if (isset($options['enclosure'])) {
+                $this->_options['enclosure'] = $options['enclosure'];
+            }
+
+            if (isset($options['header']) && preg_match("/^[0-9]+$/", $options['header'])) {
+                $this->_options['header'] = $options['header'];
+            }
+
+            if (isset($options['required_headers']) && is_countable($options['required_headers'])) {
+                $this->_options['required_headers'] = $options['required_headers'];
+            }
+
+            if (isset($options['alias']) && is_countable($options['alias'])) {
+                $this->_options['alias'] = $options['alias'];
+            }
+        }
+    }
+
+    /**
+     * Method to set the headers
+     *
+     * @throws InvalidHeaderOrField
+     */
+    private function setHeader()
+    {
+        $row = 0;
+        $this->_index = 0;
+
+        // loop until you get to the header row
+        while ($data = fgetcsv($this->_fh, 0, $this->_options['delimiter'], $this->_options['enclosure'])) {
+            if ($row == $this->_options['header']) {
+                $this->_header = new CSVHeader($data, $this->_options['required_headers']);
+                break;
+            } else {
+                $row++;
+            }
+        }
+
+        $this->lineCount = self::getLineCount($this->filename) - ($row + 1);
     }
 
     /**
@@ -231,23 +261,19 @@ class CSVReader implements Iterator
 
     /**
      * Read the next row
-     *
-     * @return bool Returns FALSE if you are at the end of the file, otherwise returns TRUE
      */
-    public function next()
+    public function next(): void
     {
         if (!is_resource($this->_fh)) {
             throw new FileException('File is no longer open');
         }
         $tmp = fgetcsv($this->_fh, 0, $this->_options['delimiter'], $this->_options['enclosure'], '\\');
         if (feof($this->_fh) && !is_array($tmp)) {
-            return false;
+            throw new FileException('End of file', 100);
         }
 
         $this->_data = $tmp;
         $this->_index++;
-
-        return true;
     }
 
     /**
@@ -264,22 +290,10 @@ class CSVReader implements Iterator
     /**
      * Start the file over
      */
-    public function rewind()
+    public function rewind(): void
     {
         fseek($this->_fh, 0);
-
-        $row = 0;
-        $this->_index = 0;
-
-        // loop until you get to the header row
-        while ($data = fgetcsv($this->_fh, 0, $this->_options['delimiter'], $this->_options['enclosure'])) {
-            if ($row == $this->_options['header']) {
-                $this->_header = new CSVHeader($data);
-                break;
-            } else {
-                $row++;
-            }
-        }
+        $this->setHeader();
 
         $this->next();
     }
@@ -289,7 +303,7 @@ class CSVReader implements Iterator
      *
      * @return bool
      */
-    public function valid()
+    public function valid(): bool
     {
         return true;
     }

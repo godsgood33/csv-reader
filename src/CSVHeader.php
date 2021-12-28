@@ -29,23 +29,30 @@ class CSVHeader
      * Constructor method
      *
      * @param array $header
+     * @param array $requiredHeaders
      *
      * @throws InvalidHeaderOrField
      */
-    public function __construct(array $header)
+    public function __construct(array $header, array $requiredHeaders = [])
     {
         // check that there is valid header data
         if (empty($header) || !count($header)) {
             throw new InvalidHeaderOrField("Header array is empty");
         }
 
-        // loop through each header field to strip out invalid characters and reverse the key/value pairs to get the index of each header field
+        // loop through each header field to strip out invalid characters and
+        // reverse the key/value pairs to get the index of each header field
         foreach ($header as $row => $h) {
             $h = preg_replace("/[^a-zA-Z0-9_]/", "", $h);
             if (empty($h)) {
                 throw new InvalidHeaderOrField("Empty header");
             }
             $this->_header[$h] = $row;
+        }
+
+        if (!$this->checkHeaders($requiredHeaders)) {
+            throw new InvalidHeaderOrField("Missing Headers (".
+                implode(",", $requiredHeaders).")");
         }
 
         // store the original header titles

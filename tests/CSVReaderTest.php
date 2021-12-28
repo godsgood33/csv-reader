@@ -70,7 +70,9 @@ final class CSVReaderTest extends PHPUnit\Framework\TestCase
         $this->csvreader = new CSVReader(
             __DIR__ . "/Example.csv",
             [
-                'delimiter' => ',', 'enclosure' => '"', 'header' => 1
+                'delimiter' => ',',
+                'enclosure' => '"',
+                'header' => 1
             ]
         );
         $this->assertInstanceOf("Godsgood33\CSVReader\CSVReader", $this->csvreader);
@@ -174,6 +176,28 @@ final class CSVReaderTest extends PHPUnit\Framework\TestCase
         ]);
 
         $this->assertEquals('HPSS', $this->csvreader->id);
+    }
+
+    public function testGetAliases()
+    {
+        $this->csvreader = new CSVReader(__DIR__."/Example.csv", [
+            'alias' => [
+                'item' => 'Item',
+                'id' => 'SKU',
+                'qty' => 'Qty',
+                'cost' => 'Cost',
+                'price' => 'Price',
+            ]
+        ]);
+
+        $aliases = $this->csvreader->getAliases();
+        $this->assertEquals('Qty', $aliases['qty']);
+    }
+
+    public function testGetEmptyAliases()
+    {
+        $aliases = $this->csvreader->getAliases();
+        $this->assertNull($aliases);
     }
 
     public function testInvalidHeaderAlias()
