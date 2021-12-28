@@ -181,10 +181,12 @@ class CSVReader implements Iterator
     {
         if (substr($filename, 0, 4) == 'http') {
             $res = @get_headers($filename);
-            if ($res[0] != 'HTTP/1.1 200 OK') {
+            if (is_array($res) && $res[0] != 'HTTP/1.1 200 OK') {
                 throw new FileException("Unable to access remote file");
+            } elseif (!$res) {
+                throw new FileException('Unable to access remote file');
             }
-        } elseif (!file_exists($filename) ||!is_readable($filename)) {
+        } elseif (!file_exists($filename) || !is_readable($filename)) {
             throw new FileException("File does not exist or is not readable");
         }
     }

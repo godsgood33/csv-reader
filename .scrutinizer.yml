@@ -11,15 +11,17 @@ tools:
     php_cs_fixer: true
     
 build:
+    environment:
+        php: 8.0.14
+
     nodes:
         coverage:
-            tests:
-                override:
-                    - 
-                        command: 'vendor/bin/phpunit . --coverage-clover=coverage.clover'
-                        coverage:
-                            file: 'coverage.clover'
-                            format: 'php-clover'
+            override:
+                - 
+                    command: 'XDEBUG_MODE=coverage vendor/bin/phpunit . --coverage-clover=coverage.clover'
+                    coverage:
+                        file: 'coverage.clover'
+                        format: 'php-clover'
 
 build_failure_conditions:
     - 'elements.rating(<= C).new.exists'                        # No new classes/methods with a rating of C or worse allowed
