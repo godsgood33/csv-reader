@@ -12,18 +12,14 @@ tools:
     
 build:
     nodes:
-        analysis:
-            tests:
-                override:
-                    - php-scrutinizer-run
-                    
         coverage:
             tests:
                 override:
-                    - command: ./vendor/bin/phpunit --coverage-clover=coverage.clover
-                    coverage:
-                        file: coverage.clover
-                        format: clover
+                    - 
+                        command: 'vendor/bin/phpunit . --coverage-clover=coverage.clover'
+                        coverage:
+                            file: 'coverage.clover'
+                            format: 'php-clover'
 
 build_failure_conditions:
     - 'elements.rating(<= C).new.exists'                        # No new classes/methods with a rating of C or worse allowed
