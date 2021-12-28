@@ -15,13 +15,17 @@ build:
         php: 8.0.14
 
     nodes:
+        analysis:
+            tests:
+                override:
+                    - php-scrutinizer-run
         coverage:
-            override:
-                - 
-                    command: 'XDEBUG_MODE=coverage vendor/bin/phpunit . --coverage-clover=coverage.clover'
-                    coverage:
-                        file: 'coverage.clover'
-                        format: 'php-clover'
+            tests:
+                override:
+                    - command: 'vendor/bin/phpunit . --coverage-clover=tests/coverage.clover'
+                    file: 'tests/coverage.clover'
+                    format: clover
+
 
 build_failure_conditions:
     - 'elements.rating(<= C).new.exists'                        # No new classes/methods with a rating of C or worse allowed
