@@ -16,7 +16,7 @@ use Godsgood33\CSVReader\Exceptions\FileException;
  * @property string $enclosure
  *      string value representing the character used to surround fields where the delimiting character
  *      is present in the field itself
- * @property int $header
+ * @property int $headerIndex
  *      zero-based integer representing the row the header is on
  * @property string[] $required_headers
  *      an array of header fields that are required in the file
@@ -32,35 +32,35 @@ class CSVReader implements Iterator
      *
      * @var resource|false
      */
-    private $_fh;
+    private $fh;
 
     /**
      * Options for parsing the file
      *
      * @var array<string, array|int|string>
      */
-    private array $_options;
+    private array $options;
 
     /**
      * Header
      *
      * @var CSVHeader
      */
-    private CSVHeader $_header;
+    private CSVHeader $header;
 
     /**
      * Index of the row
      *
      * @var int
      */
-    private int $_index;
+    private int $index;
 
     /**
      * Array to store the data in the row
      *
      * @var array<int, string>
      */
-    private array $_data;
+    private array $data;
 
     /**
      * Variable to store the filename that is being parsed
@@ -77,7 +77,7 @@ class CSVReader implements Iterator
      * @param array{
      *      'delimiter'?: string,
      *      'enclosure'?: string,
-     *      'header'?: int,
+     *      'headerIndex'?: int,
      *      'required_headers'?: array<int, string>,
      *      'alias'?: array<int, string>
      * } $options
@@ -88,10 +88,10 @@ class CSVReader implements Iterator
      */
     public function __construct(string $filename, ?array $options = [])
     {
-        $this->_options = [
+        $this->options = [
             'delimiter' => ',',
             'enclosure' => '"',
-            'header' => 0,
+            'headerIndex' => 0,
             'required_headers' => [],
             'alias' => [],
         ];
@@ -100,7 +100,7 @@ class CSVReader implements Iterator
         $this->filename = $filename;
 
         // open the file and store the handler
-        $this->_fh = fopen($this->filename, "r");
+        $this->fh = fopen($this->filename, "r");
 
         $this->setHeader();
 
@@ -126,10 +126,10 @@ class CSVReader implements Iterator
             $field = $alias;
         }
 
-        $header = $this->_header->{$field};
+        $header = $this->header->{$field};
 
         if ($header !== null) {
-            return $this->_data[$header];
+            return $this->data[$header];
         }
 
         return $header;
@@ -161,7 +161,7 @@ class CSVReader implements Iterator
     private function isOption(string $field): bool
     {
         if (in_array($field, [
-            'delimiter', 'enclosure', 'header', 'required_headers', 'alias'
+            'delimiter', 'enclosure', 'headerIndex', 'required_headers', 'alias'
         ])) {
             return true;
         }
@@ -178,7 +178,7 @@ class CSVReader implements Iterator
      */
     private function getOption(string $field)
     {
-        return $this->_options[$field];
+        return $this->options[$field];
     }
 
     /**
@@ -188,8 +188,8 @@ class CSVReader implements Iterator
      */
     public function getHeaderTitles()
     {
-        if (is_a($this->_header, 'Godsgood33\CSVReader\CSVHeader')) {
-            return $this->_header->getTitles();
+        if (is_a($this->header, 'Godsgood33\CSVReader\CSVHeader')) {
+            return $this->header->getTitles();
         }
         return null;
     }
@@ -266,16 +266,16 @@ class CSVReader implements Iterator
     private function setHeader(): void
     {
         $row = 0;
-        $this->_index = 0;
+        $this->index = 0;
 
-        if (!is_resource($this->_fh)) {
+        if (!is_resource($this->fh)) {
             throw new FileException('Invalid file');
         }
 
         // loop until you get to the header row
-        while ($data = fgetcsv($this->_fh, 0, $this->delimiter, $this->enclosure)) {
+        while ($data = fgetcsv($this->fh, 0, $this->delimiter, $this->enclosure)) {
             if ($row == $this->header) {
-                $this->_header = new CSVHeader($data, $this->required_headers);
+                $this->header = new CSVHeader($data, $this->required_headers);
                 break;
             } else {
                 $row++;
@@ -294,12 +294,12 @@ class CSVReader implements Iterator
     {
         $ret = [];
 
-        if (!is_a($this->_header, 'Godsgood33\CSVReader\CSVHeader')) {
+        if (!is_a($this->header, 'Godsgood33\CSVReader\CSVHeader')) {
             return $ret;
         }
 
-        foreach ($this->_header->all() as $h => $idx) {
-            $ret[$h] = $this->_data[$idx];
+        foreach ($this->header->all() as $h => $idx) {
+            $ret[$h] = $this->data[$idx];
         }
 
         return $ret;
@@ -312,19 +312,19 @@ class CSVReader implements Iterator
      */
     public function next(): void
     {
-        if (!is_resource($this->_fh)) {
+        if (!is_resource($this->fh)) {
             throw new FileException('File is no longer open');
         }
-        $tmp = fgetcsv($this->_fh, 0, $this->delimiter, $this->enclosure, '\\');
+        $tmp = fgetcsv($this->fh, 0, $this->delimiter, $this->enclosure, '\\');
         if (!$tmp) {
             throw new FileException('End of file');
         }
-        if (feof($this->_fh)) {
+        if (feof($this->fh)) {
             throw new FileException('End of file', 100);
         }
 
-        $this->_data = $tmp;
-        $this->_index++;
+        $this->data = $tmp;
+        $this->index++;
     }
 
     /**
@@ -335,7 +335,7 @@ class CSVReader implements Iterator
     public function key()
     {
         // start at the current row index and then subtract whatever the header row is supposed to be on
-        return $this->_index - $this->header;
+        return $this->index - $this->headerIndex;
     }
 
     /**
@@ -345,8 +345,8 @@ class CSVReader implements Iterator
      */
     public function rewind(): void
     {
-        if (is_resource($this->_fh)) {
-            fseek($this->_fh, 0);
+        if (is_resource($this->fh)) {
+            fseek($this->fh, 0);
             $this->setHeader();
 
             $this->next();
@@ -370,8 +370,8 @@ class CSVReader implements Iterator
      */
     public function close()
     {
-        if (is_resource($this->_fh)) {
-            return fclose($this->_fh);
+        if (is_resource($this->fh)) {
+            return fclose($this->fh);
         }
 
         return false;

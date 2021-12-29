@@ -16,14 +16,14 @@ class CSVHeader
      *
      * @var array<string, int>
      */
-    private array $_header;
+    private array $header;
 
     /**
      * Original header titles
      *
      * @var string[]
      */
-    private array $_titles;
+    private array $titles;
 
     /**
      * Constructor method
@@ -47,7 +47,7 @@ class CSVHeader
             if (empty($h)) {
                 throw new InvalidHeaderOrField("Empty header");
             }
-            $this->_header[$h] = $row;
+            $this->header[$h] = $row;
         }
 
         if ($requiredHeaders && !$this->checkHeaders($requiredHeaders)) {
@@ -56,7 +56,7 @@ class CSVHeader
         }
 
         // store the original header titles
-        $this->_titles = $header;
+        $this->titles = $header;
     }
 
     /**
@@ -66,8 +66,8 @@ class CSVHeader
      */
     public function __get(string $field)
     {
-        if (isset($this->_header[$field])) {
-            return $this->_header[$field];
+        if (isset($this->header[$field])) {
+            return $this->header[$field];
         }
 
         return null;
@@ -80,17 +80,17 @@ class CSVHeader
      */
     public function all()
     {
-        return $this->_header;
+        return $this->header;
     }
 
     /**
      * Method to get the original header titles
      *
-     * @return array<int, string>
+     * @return array<string>
      */
     public function getTitles()
     {
-        return array_values($this->_titles);
+        return array_values($this->titles);
     }
 
     /**
@@ -105,7 +105,7 @@ class CSVHeader
     public function checkHeaders(array $req_headers): bool
     {
         foreach ($req_headers as $h) {
-            if (!in_array($h, array_keys($this->_header))) {
+            if (!in_array($h, array_keys($this->header))) {
                 return false;
             }
         }
