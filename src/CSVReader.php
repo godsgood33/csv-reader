@@ -243,7 +243,7 @@ class CSVReader implements Iterator
             }
 
             if (isset($options['header']) && is_int($options['header'])) {
-                $this->header = $options['header'];
+                $this->headerIndex = $options['header'];
             }
 
             if (isset($options['required_headers']) && is_countable($options['required_headers'])) {
@@ -274,7 +274,7 @@ class CSVReader implements Iterator
 
         // loop until you get to the header row
         while ($data = fgetcsv($this->fh, 0, $this->delimiter, $this->enclosure)) {
-            if ($row == $this->header) {
+            if ($row == $this->headerIndex) {
                 $this->header = new CSVHeader($data, $this->required_headers);
                 break;
             } else {
@@ -319,7 +319,7 @@ class CSVReader implements Iterator
         if (!$tmp) {
             throw new FileException('End of file');
         }
-        if (feof($this->fh)) {
+        if (!$tmp && feof($this->fh)) {
             throw new FileException('End of file', 100);
         }
 

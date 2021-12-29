@@ -16,11 +16,12 @@
     ],
     "autoload": {
         "psr-4": {
-            "Godsgood33\\CSVReader\\": "src"
+            "Godsgood33\\CSVReader\\": "src",
+            "Godsgood33\\CSVReaderTests\\": "tests"
         }
     },
     "scripts": {
-        "phpstan": "vendor/bin/phpstan analyse src --level=5",
+        "phpstan": "vendor/bin/phpstan analyse src --level=9",
         "coverage": "vendor/bin/phpunit . --coverage-html=coverage"
     }
 }

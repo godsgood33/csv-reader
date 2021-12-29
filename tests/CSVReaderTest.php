@@ -2,8 +2,11 @@
 
 declare(strict_types=1);
 
+namespace Godsgood33\CSVReaderTests;
+
 require_once dirname(__DIR__) . "/vendor/autoload.php";
 
+use Exception;
 use Godsgood33\CSVReader\CSVHeader;
 use Godsgood33\CSVReader\CSVReader;
 use Godsgood33\CSVReader\Exceptions\FileException;
@@ -12,7 +15,7 @@ use Godsgood33\CSVReader\Exceptions\InvalidHeaderOrField;
 /**
  * @coversDefaultClass CSVReader
  */
-final class CSVReaderTest extends PHPUnit\Framework\TestCase
+final class CSVReaderTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @var CSVReader
@@ -190,14 +193,14 @@ final class CSVReaderTest extends PHPUnit\Framework\TestCase
             ]
         ]);
 
-        $aliases = $this->csvreader->getAliases();
+        $aliases = $this->csvreader->alias;
         $this->assertEquals('Qty', $aliases['qty']);
     }
 
     public function testGetEmptyAliases()
     {
-        $aliases = $this->csvreader->getAliases();
-        $this->assertNull($aliases);
+        $aliases = $this->csvreader->alias;
+        $this->assertEmpty($aliases);
     }
 
     public function testInvalidHeaderAlias()

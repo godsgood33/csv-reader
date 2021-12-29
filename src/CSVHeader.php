@@ -28,7 +28,7 @@ class CSVHeader
     /**
      * Constructor method
      *
-     * @param string[] $header
+     * @param array<int, string> $header
      * @param string[]|null $requiredHeaders
      *
      * @throws InvalidHeaderOrField
@@ -36,7 +36,7 @@ class CSVHeader
     public function __construct(array $header, ?array $requiredHeaders = null)
     {
         // check that there is valid header data
-        if (empty($header) || !count($header)) {
+        if (empty($header)) {
             throw new InvalidHeaderOrField("Header array is empty");
         }
 
