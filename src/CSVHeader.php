@@ -14,26 +14,26 @@ class CSVHeader
     /**
      * Header titles after sanitizing
      *
-     * @var array
+     * @var array<string, int>
      */
-    private $_header = [];
+    private array $_header;
 
     /**
      * Original header titles
      *
-     * @var array
+     * @var string[]
      */
-    private $_titles = [];
+    private array $_titles;
 
     /**
      * Constructor method
      *
-     * @param array $header
-     * @param array $requiredHeaders
+     * @param string[] $header
+     * @param string[]|null $requiredHeaders
      *
      * @throws InvalidHeaderOrField
      */
-    public function __construct(array $header, array $requiredHeaders = [])
+    public function __construct(array $header, ?array $requiredHeaders = null)
     {
         // check that there is valid header data
         if (empty($header) || !count($header)) {
@@ -50,7 +50,7 @@ class CSVHeader
             $this->_header[$h] = $row;
         }
 
-        if (!$this->checkHeaders($requiredHeaders)) {
+        if ($requiredHeaders && !$this->checkHeaders($requiredHeaders)) {
             throw new InvalidHeaderOrField("Missing Headers (".
                 implode(",", $requiredHeaders).")");
         }
@@ -62,7 +62,7 @@ class CSVHeader
     /**
      * Magic method to convert the requested header to a field index
      *
-     * @return null|integer
+     * @return null|int|string
      */
     public function __get(string $field)
     {
@@ -76,7 +76,7 @@ class CSVHeader
     /**
      * Method to return all headers
      *
-     * @return array
+     * @return array<string, int>
      */
     public function all()
     {
@@ -86,7 +86,7 @@ class CSVHeader
     /**
      * Method to get the original header titles
      *
-     * @return array
+     * @return array<int, string>
      */
     public function getTitles()
     {
@@ -96,7 +96,7 @@ class CSVHeader
     /**
      * Method to check that all required headers are present in the file
      *
-     * @param array $req_headers
+     * @param string[] $req_headers
      *      An array of headers that are required
      *
      * @return bool

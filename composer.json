@@ -4,7 +4,8 @@
     "type": "library",
     "require-dev": {
         "phpunit/phpunit": "^9.4",
-        "phpunit/php-code-coverage": "^9.2"
+        "phpunit/php-code-coverage": "^9.2",
+        "phpstan/phpstan": "^1.2"
     },
     "license": "Apache-2.0",
     "authors": [
@@ -13,10 +14,13 @@
             "email": "godsgood33@gmail.com"
         }
     ],
-    "require": {},
     "autoload": {
         "psr-4": {
             "Godsgood33\\CSVReader\\": "src"
         }
+    },
+    "scripts": {
+        "phpstan": "vendor/bin/phpstan analyse src --level=5",
+        "coverage": "vendor/bin/phpunit . --coverage-html=coverage"
     }
 }
