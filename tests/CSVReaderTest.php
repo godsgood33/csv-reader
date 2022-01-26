@@ -81,6 +81,17 @@ final class CSVReaderTest extends \PHPUnit\Framework\TestCase
         $this->assertInstanceOf("Godsgood33\CSVReader\CSVReader", $this->csvreader);
     }
 
+    public function testPropToLower()
+    {
+        $this->csvreader = new CSVReader(__DIR__ . "/Example.csv", [
+            'propToLower' => true
+        ]);
+
+        $this->assertInstanceOf("Godsgood33\CSVReader\CSVReader", $this->csvreader);
+
+        $this->assertEquals('HPSS', $this->csvreader->sku);
+    }
+
     public function testGetLineCount()
     {
         $this->assertEquals(2, $this->csvreader->lineCount);
@@ -233,5 +244,47 @@ final class CSVReaderTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(FileException::class);
         $this->csvreader = new CSVReader("http://www.example.com/example.csv");
+    }
+
+    public function testReadLargeFile()
+    {
+        $this->csvreader = new CSVReader(__DIR__ . '/movie-library.csv');
+
+        $this->assertEquals(970, $this->csvreader->lineCount);
+        $this->assertEquals("300", $this->csvreader->title);
+        $this->csvreader->next();
+        $this->assertEquals("1984", $this->csvreader->title_sort);
+
+        $lineCount = 0;
+
+        do {
+            $lineCount++;
+        } while ($this->csvreader->next());
+
+        $this->assertEquals(969, $lineCount);
+    }
+
+    public function testReadFileWithSemicolonDelimiters()
+    {
+        $this->csvreader = new CSVReader(
+            __DIR__.'/csv_semicolon_delimiter.csv',
+            [
+                'delimiter' => ';'
+            ]
+        );
+
+        $this->assertEquals('HPSS', $this->csvreader->SKU);
+    }
+
+    public function testReadFileWithSingleQuoteEnclosures()
+    {
+        $this->csvreader = new CSVReader(
+            __DIR__.'/csv_singlequote_enclosure.csv',
+            [
+                'enclosure' => "'"
+            ]
+        );
+
+        $this->assertEquals('HPSS', $this->csvreader->SKU);
     }
 }
