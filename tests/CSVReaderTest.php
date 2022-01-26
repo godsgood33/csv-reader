@@ -2,8 +2,11 @@
 
 declare(strict_types=1);
 
+namespace Godsgood33\CSVReaderTests;
+
 require_once dirname(__DIR__) . "/vendor/autoload.php";
 
+use Exception;
 use Godsgood33\CSVReader\CSVHeader;
 use Godsgood33\CSVReader\CSVReader;
 use Godsgood33\CSVReader\Exceptions\FileException;
@@ -12,7 +15,7 @@ use Godsgood33\CSVReader\Exceptions\InvalidHeaderOrField;
 /**
  * @coversDefaultClass CSVReader
  */
-final class CSVReaderTest extends PHPUnit\Framework\TestCase
+final class CSVReaderTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @var CSVReader
@@ -67,8 +70,31 @@ final class CSVReaderTest extends PHPUnit\Framework\TestCase
 
     public function testOptions()
     {
-        $this->csvreader = new CSVReader(__DIR__ . "/Example.csv", ['delimiter' => ',', 'enclosure' => '"', 'header' => 1]);
+        $this->csvreader = new CSVReader(
+            __DIR__ . "/Example.csv",
+            [
+                'delimiter' => ',',
+                'enclosure' => '"',
+                'header' => 1
+            ]
+        );
         $this->assertInstanceOf("Godsgood33\CSVReader\CSVReader", $this->csvreader);
+    }
+
+    public function testPropToLower()
+    {
+        $this->csvreader = new CSVReader(__DIR__ . "/Example.csv", [
+            'propToLower' => true
+        ]);
+
+        $this->assertInstanceOf("Godsgood33\CSVReader\CSVReader", $this->csvreader);
+
+        $this->assertEquals('HPSS', $this->csvreader->sku);
+    }
+
+    public function testGetLineCount()
+    {
+        $this->assertEquals(2, $this->csvreader->lineCount);
     }
 
     public function testReadEmptyFile()
@@ -149,5 +175,116 @@ final class CSVReaderTest extends PHPUnit\Framework\TestCase
         $this->expectException(FileException::class);
         $this->csvreader->close();
         $this->csvreader->next();
+    }
+
+    public function testHeaderAliases()
+    {
+        $this->csvreader = new CSVReader(__DIR__."/Example.csv", [
+            'alias' => [
+                'item' => 'Item',
+                'id' => 'SKU',
+                'qty' => 'Qty',
+                'cost' => 'Cost',
+                'price' => 'Price',
+            ]
+        ]);
+
+        $this->assertEquals('HPSS', $this->csvreader->id);
+    }
+
+    public function testGetAliases()
+    {
+        $this->csvreader = new CSVReader(__DIR__."/Example.csv", [
+            'alias' => [
+                'item' => 'Item',
+                'id' => 'SKU',
+                'qty' => 'Qty',
+                'cost' => 'Cost',
+                'price' => 'Price',
+            ]
+        ]);
+
+        $aliases = $this->csvreader->alias;
+        $this->assertEquals('Qty', $aliases['qty']);
+    }
+
+    public function testGetEmptyAliases()
+    {
+        $aliases = $this->csvreader->alias;
+        $this->assertEmpty($aliases);
+    }
+
+    public function testInvalidHeaderAlias()
+    {
+        $this->csvreader = new CSVReader(__DIR__."/Example.csv", [
+            'alias' => [
+                'item' => 'frank',
+                'id' => 'SKU',
+                'qty' => 'Qty',
+                'cost' => 'Cost',
+                'price' => 'Price',
+            ]
+        ]);
+
+        $this->assertNull($this->csvreader->item);
+    }
+
+    public function testURLCSVReader()
+    {
+        $this->csvreader = new CSVReader(
+            "https://support.staffbase.com/hc/en-us/article_attachments/360009197031/username.csv",
+            [
+                'delimiter' => ';'
+            ]
+        );
+        $this->assertEquals('booker12', $this->csvreader->Username);
+    }
+
+    public function testInvalidURL()
+    {
+        $this->expectException(FileException::class);
+        $this->csvreader = new CSVReader("http://www.example.com/example.csv");
+    }
+
+    public function testReadLargeFile()
+    {
+        $this->csvreader = new CSVReader(__DIR__ . '/movie-library.csv');
+
+        $this->assertEquals(970, $this->csvreader->lineCount);
+        $this->assertEquals("300", $this->csvreader->title);
+        $this->csvreader->next();
+        $this->assertEquals("1984", $this->csvreader->title_sort);
+
+        $lineCount = 0;
+
+        do {
+            $lineCount++;
+        } while ($this->csvreader->next());
+
+        $this->assertEquals(969, $lineCount);
+    }
+
+    public function testReadFileWithSemicolonDelimiters()
+    {
+        $this->csvreader = new CSVReader(
+            __DIR__.'/csv_semicolon_delimiter.csv',
+            [
+                'delimiter' => ';'
+            ]
+        );
+
+        $this->assertEquals('HPSS', $this->csvreader->SKU);
+    }
+
+    public function testReadFileWithSingleQuoteEnclosures()
+    {
+        $this->csvreader = new CSVReader(
+            __DIR__.'/csv_singlequote_enclosure.csv',
+            [
+                'enclosure' => "'"
+            ]
+        );
+
+        $this->assertEquals('HPSS', $this->csvreader->SKU);
     }
 }

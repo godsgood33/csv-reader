@@ -1,6 +1,8 @@
-# csv-reader
+# CSV Reader
 
-The purpose of this library is to simplify reading and parsing CSV files.  I have parsed CSV files so many times and there is not really an easy way to do it.  You have to know the index of the row you want to insert and it would be so much more readable if you could just use the header.  A while ago, I started reading the header row, flipping the array so that the index of the row elements is now the value of the field index.
+## Intro
+
+The purpose of this library is to simplify reading and parsing CSV files.  I have parsed CSV files so many times and there is not really an easy way to do it.  You have to know the index of the row you want to insert and it would be so much more readable if you could just use the header title itself as the field index.  A while ago, I started reading the header row, flipping the array so that the index of the row elements is now the value of the field index.
 
 ```
 $header = array_flip(fgetcsv($fh));
@@ -27,27 +29,54 @@ $column1 = $data[$column1HeaderIndex];
 
 So what I thought I would do is create a library that would allow you to use the header titles as field names.  Here's how you do it.
 
+## Installation/Setup
+
 ```
 composer require godsgood33/csv-reader
 ```
 
-Then you need to pass your CSV filename into the class and create an object
+## Use
+
+Pass your CSV filename into the class and create an object
 
 ```
 $reader = new CSVReader($csvFilename);
 ```
 
-If your file has different than the standard delimiter, enclosure, or the header row is not row 1 (0 based, so actually row 0), then you can alternatively pass in an array of options.
+### **Options**
+
+These options are available as an associative array as the second parameter of the constructor
+
+- delimiter - **,** (default)
+  - what character separates the fields
+- enclosure - **"** (default)
+  - what character surrounds a field should it contain the delimiter character
+- escape - **\\** (default)
+  - what character will escape an enclosure character
+- header - **0** (default)
+  - what row (0-based) is the header title row on
+- propToLower - **false** (default)
+  - convert header titles to lowercase
+- alias - **[]**
+  - an array of aliases and what field they point to
+    - [
+        'name' => 'Name',
+        'phone' => 'PhoneNumber',
+        'email' => 'Email'
+    ]
+- required_headers - **[]**
+  - what headers are required to be present in the file *(formatted the way they would be after invalid character removal or converting to lower case)*
+    - ['Name', 'PhoneNumber', 'Email']
 
 ```
-$reader = new CSVReader($csvFilename, ['delimiter' => ';', 'enclosure' => "'", 'header' => 1]);
+$reader = new CSVReader($csvFilename, ['delimiter' => ';', 'enclosure' => "'", 'header' => 1, 'propToLower' => true]);
 ```
 
 The CSVReader will remove any non-alphanumeric characters `[^a-zA-Z0-9_]`.
 
 After this is done, all you need to do is start looping until the end of the file is reached or the data you're looking for is found.
 
-NOTE: CSVReader will automatically skip to the first row after the header after it is done parsing so DON'T use a `while` loop
+NOTE: CSVReader will automatically read the first row after the header after it is done parsing so DON'T use a `while` loop
 
 ```
 do {
@@ -59,17 +88,35 @@ Inside your loop you can use the header titles as field names to retrieve the da
 
 ```
 do {
-    $column1 = $reader->column1;
-    $column2 = $reader->column2;
+    $name = $reader->name;
+    $phone = $reader->phone;
+    $email = $reader->email;
 } while($reader->next());
 ```
+
+## Required Headers
 
 If there are required headers that you must have in your file you can specify them in the 'required_headers' option passed in at instantiation time.
 
 ```
-$csvreader = new CSVReader('file.csv', ['required_headers' => [
+$reader = new CSVReader('file.csv', ['required_headers' => [
     'name', 'phone', 'email'
 ]]);
 ```
 
-This will throw and error the required headers are missing.  The required headers need to be formatted just like the headers will be once all invalid characters are removed.
+This will throw a `MissingRequiredHeader` exception if the required headers are missing.  The required headers need to be formatted just like the headers will be once all invalid characters are removed or converted to lowercase
+
+## Aliases
+
+If you would like to specify that a field has an alias name you can specify that with the `'alias'` associative array option.  The key parameter is the alias and the value is the field it points to.
+
+```
+$reader = new CSVReader('file.csv', ['alias' => ['digits' => 'phone']]);
+```
+
+The above would allow you to use the either of the following:
+
+```
+$phone = $reader->digits;
+$phone = $reader->phone;
+```

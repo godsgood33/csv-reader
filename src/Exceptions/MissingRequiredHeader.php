@@ -4,6 +4,6 @@ namespace Godsgood33\CSVReader\Exceptions;
 
 use Exception;
 
-class InvalidHeaderOrField extends Exception
+class MissingRequiredHeader extends Exception
 {
 }

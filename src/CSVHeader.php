@@ -14,53 +14,60 @@ class CSVHeader
     /**
      * Header titles after sanitizing
      *
-     * @var array
+     * @var array<string, int>
      */
-    private $_header = [];
+    private array $header;
 
     /**
      * Original header titles
      *
-     * @var array
+     * @var string[]
      */
-    private $_titles = [];
+    private array $titles;
 
     /**
      * Constructor method
      *
-     * @param array $header
+     * @param array<int, string> $header
+     * @param string[]|null $requiredHeaders
      *
      * @throws InvalidHeaderOrField
      */
-    public function __construct(array $header)
+    public function __construct(array $header, ?array $requiredHeaders = null)
     {
         // check that there is valid header data
-        if (empty($header) || !count($header)) {
+        if (empty($header)) {
             throw new InvalidHeaderOrField("Header array is empty");
         }
 
-        // loop through each header field to strip out invalid characters and reverse the key/value pairs to get the index of each header field
+        // loop through each header field to strip out invalid characters and
+        // reverse the key/value pairs to get the index of each header field
         foreach ($header as $row => $h) {
             $h = preg_replace("/[^a-zA-Z0-9_]/", "", $h);
             if (empty($h)) {
                 throw new InvalidHeaderOrField("Empty header");
             }
-            $this->_header[$h] = $row;
+            $this->header[$h] = $row;
+        }
+
+        if ($requiredHeaders && !$this->checkHeaders($requiredHeaders)) {
+            throw new InvalidHeaderOrField("Missing Headers (".
+                implode(",", $requiredHeaders).")");
         }
 
         // store the original header titles
-        $this->_titles = $header;
+        $this->titles = $header;
     }
 
     /**
      * Magic method to convert the requested header to a field index
      *
-     * @return null|integer
+     * @return null|int|string
      */
     public function __get(string $field)
     {
-        if (isset($this->_header[$field])) {
-            return $this->_header[$field];
+        if (isset($this->header[$field])) {
+            return $this->header[$field];
         }
 
         return null;
@@ -69,27 +76,27 @@ class CSVHeader
     /**
      * Method to return all headers
      *
-     * @return array
+     * @return array<string, int>
      */
     public function all()
     {
-        return $this->_header;
+        return $this->header;
     }
 
     /**
      * Method to get the original header titles
      *
-     * @return array
+     * @return array<string>
      */
     public function getTitles()
     {
-        return array_values($this->_titles);
+        return array_values($this->titles);
     }
 
     /**
      * Method to check that all required headers are present in the file
      *
-     * @param array $req_headers
+     * @param string[] $req_headers
      *      An array of headers that are required
      *
      * @return bool
@@ -98,7 +105,7 @@ class CSVHeader
     public function checkHeaders(array $req_headers): bool
     {
         foreach ($req_headers as $h) {
-            if (!in_array($h, array_keys($this->_header))) {
+            if (!in_array($h, array_keys($this->header))) {
                 return false;
             }
         }
