@@ -287,4 +287,13 @@ final class CSVReaderTest extends \PHPUnit\Framework\TestCase
 
         $this->assertEquals('HPSS', $this->csvreader->SKU);
     }
+
+    public function testSetMap()
+    {
+        $this->csvreader = new CSVReader(
+            __DIR__.'/movie-library.csv'
+        );
+        $this->csvreader->addMap('full_title', "%0 (%1)", ['title', 'year']);
+        $this->assertEquals("300 (2007)", $this->csvreader->full_title);
+    }
 }

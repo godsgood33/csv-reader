@@ -67,6 +67,13 @@ class CSVReader implements Iterator
     private array $data;
 
     /**
+     * Array to store mapping
+     *
+     * @var array<string, CSVMap>
+     */
+    private array $map;
+
+    /**
      * Variable to store the filename that is being parsed
      *
      * @var string
@@ -134,13 +141,67 @@ class CSVReader implements Iterator
             $field = $alias;
         }
 
-        $header = $this->header->{$field};
+        $headerIndex = $this->header->{$field};
 
-        if ($header !== null) {
-            return $this->data[$header];
+        if ($headerIndex !== null) {
+            return $this->data[$headerIndex];
         }
 
-        return $header;
+        if ($this->isMap($field)) {
+            return $this->getMap($field);
+        }
+
+        return $headerIndex;
+    }
+
+    /**
+     * Method to add a map to the array
+     *
+     * @param string $column
+     * @param string $format
+     * @param array $fields
+     */
+    public function addMap(string $column, string $format, array $fields)
+    {
+        $this->map[$column] = [
+            'fields' => $fields,
+            'format' => $format
+        ];
+    }
+
+    /**
+     * Check to see if a field is linked to a map
+     *
+     * @param string $column
+     *
+     * @return bool
+     */
+    public function isMap(string $column): bool
+    {
+        return isset($this->map[$column]);
+    }
+
+    /**
+     * Method to retrieve the map data and return the formatted string
+     *
+     * @param string $column
+     *
+     * @return string
+     */
+    public function getMap(string $column): string
+    {
+        if (!$this->isMap($column)) {
+            return "";
+        }
+
+        $ret = $this->map[$column]['format'];
+
+        for ($x = 0; $x < count($this->map[$column]['fields']); $x++) {
+            $var = $this->{$this->map[$column]['fields'][$x]};
+            $ret = str_replace("%".$x, $var, $ret);
+        }
+
+        return $ret;
     }
 
     /**
