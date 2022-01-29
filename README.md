@@ -120,3 +120,57 @@ The above would allow you to use the either of the following:
 $phone = $reader->digits;
 $phone = $reader->phone;
 ```
+
+## Maps
+
+Maps in CSVReader are a way that you can read multiple fields at once and return all of them in a formatted string.  After you've created your reader you need to add a map for any fields you want.  Let's say I want to read an entire formatted address at once, I would do so with the following:
+
+```
+$reader->addMap('address', "%0\n%1, %2 %3", ['add', 'city', 'state', 'zip']);
+```
+
+As you are reading through a file you can request `$reader->address` and it will read and output the formatted string as you've requested.  Maps are available as long as that `$reader` object is available.
+
+Another example would be wanting to concatenate first and last names together automatically for database insertion.
+
+```
+$reader->addMap('name', "%0 %1", ['fname', 'lname']);
+```
+
+## Filters
+
+<!-- [Full Explanation](./FILTERS.md) -->
+
+Filters can be a really powerful option when parsing a file.  They could be used to validate the file contents before ingesting them into the system, for manipulating the data and removing or adding characters, adding in other data so that it works better in a database or HTML, or creating an object from a dataset.  Below is an example how you would use it to remove unwanted characters.  Filters can be used along with aliases, but you **MUST** do the filter on the field that is in the file...**not** the alias.  Filters do not work with Maps as those already include their own callback so you can do that functionality if you want.
+
+So given the file below
+
+```
+ID      | Name                | Phone
+1       | George Jetson       | +1 (234) 456-7890
+2       | Fred Flintstone     | +1 1-1
+...
+```
+
+Once you open the file you need to add the filter with a callback method.
+
+```
+$reader = new CSVReader('/path/to/file.csv');
+$reader->addFilter('Phone', [Employee::class, 'stripPhone']);
+```
+
+Then you'll need to add the callback method to the appropriate class (making sure it is callable from the CSVReader class, so `public static`).
+
+```
+public static function stripPhone($val): string
+{
+    return preg_replace("/[^0-9\+]/", "", $val);
+}
+```
+
+If you follow the above it will return
+
+```
++1234567890
++111
+```
