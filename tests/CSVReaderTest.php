@@ -296,4 +296,47 @@ final class CSVReaderTest extends \PHPUnit\Framework\TestCase
         $this->csvreader->addMap('full_title', "%0 (%1)", ['title', 'year']);
         $this->assertEquals("300 (2007)", $this->csvreader->full_title);
     }
+
+    public function testSetFilter()
+    {
+        $this->csvreader->addFilter('SKU', [CSVReaderTest::class, 'skuFilter']);
+        $this->assertEquals("SSPH", $this->csvreader->SKU);
+    }
+
+    public function testFilterOnAlias()
+    {
+        $this->csvreader = new CSVReader(
+            __DIR__.'/movie-library.csv',
+            [
+                'alias' => [
+                    'collection' => 'tags_collection',
+                    'genre' => 'tags_genre'
+                ]
+            ]
+        );
+
+        $this->csvreader->addFilter('tags_collection', [CSVReaderTest::class, 'splitCollection']);
+        $this->assertEquals(['300', 'test'], $this->csvreader->collection);
+    }
+
+    public function testChangeEscapeCharacter()
+    {
+        $this->csvreader = new CSVReader(
+            __DIR__.'/Example.csv',
+            [
+                'escape' => '/'
+            ]
+        );
+        $this->assertEquals('/', $this->csvreader->escape);
+    }
+
+    public static function skuFilter($val): string
+    {
+        return strrev($val);
+    }
+
+    public static function splitCollection($val): array
+    {
+        return explode('|', $val);
+    }
 }

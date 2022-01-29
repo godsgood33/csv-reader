@@ -69,9 +69,16 @@ class CSVReader implements Iterator
     /**
      * Array to store mapping
      *
-     * @var array<string, CSVMap>
+     * @var array<string, array>
      */
     private array $map;
+
+    /**
+     * Array to store filters
+     *
+     * @var array<string, callable>
+     */
+    private array $filter;
 
     /**
      * Variable to store the filename that is being parsed
@@ -117,7 +124,9 @@ class CSVReader implements Iterator
         // open the file and store the handler
         $this->fh = fopen($this->filename, "r");
 
-        $this->setHeader();
+        if (is_resource($this->fh)) {
+            $this->setHeader();
+        }
 
         $this->next();
     }
@@ -134,17 +143,20 @@ class CSVReader implements Iterator
         if ($this->isOption($field)) {
             return $this->getOption($field);
         }
-        
-        $alias = $this->hasAlias($field);
 
-        if ($alias) {
-            $field = $alias;
+        if ($this->hasAlias($field)) {
+            $field = $this->alias[$field];
         }
 
         $headerIndex = $this->header->{$field};
-
         if ($headerIndex !== null) {
-            return $this->data[$headerIndex];
+            $val = $this->data[$headerIndex];
+
+            if ($this->hasFilter($field)) {
+                return $this->callFilter($field, $val);
+            } else {
+                return $val;
+            }
         }
 
         if ($this->isMap($field)) {
@@ -161,7 +173,7 @@ class CSVReader implements Iterator
      * @param string $format
      * @param array $fields
      */
-    public function addMap(string $column, string $format, array $fields)
+    public function addMap(string $column, string $format, array $fields): void
     {
         $this->map[$column] = [
             'fields' => $fields,
@@ -176,7 +188,7 @@ class CSVReader implements Iterator
      *
      * @return bool
      */
-    public function isMap(string $column): bool
+    private function isMap(string $column): bool
     {
         return isset($this->map[$column]);
     }
@@ -188,12 +200,8 @@ class CSVReader implements Iterator
      *
      * @return string
      */
-    public function getMap(string $column): string
+    private function getMap(string $column): string
     {
-        if (!$this->isMap($column)) {
-            return "";
-        }
-
         $ret = $this->map[$column]['format'];
 
         for ($x = 0; $x < count($this->map[$column]['fields']); $x++) {
@@ -205,19 +213,53 @@ class CSVReader implements Iterator
     }
 
     /**
+     * Method to add a filter to the object
+     *
+     * @param string $filter
+     * @param callable $func
+     */
+    public function addFilter(string $filter, callable $func): void
+    {
+        if (is_callable($func)) {
+            $this->filter[$filter] = $func;
+        }
+    }
+
+    /**
+     * Method to check if a field has a fil404ter
+     *
+     * @param string $field
+     *
+     * @return bool
+     */
+    private function hasFilter(string $field): bool
+    {
+        return isset($this->filter[$field]);
+    }
+
+    /**
+     * Method to call a filter
+     *
+     * @param string $field
+     * @param string $val
+     *
+     * @return mixed
+     */
+    private function callFilter(string $field, string $val)
+    {
+        return call_user_func($this->filter[$field], $val);
+    }
+
+    /**
      * Method to check if there is an alias
      *
      * @param string $alias
      *
-     * @return null|string
+     * @return bool
      */
-    public function hasAlias(string $alias)
+    private function hasAlias(string $alias): bool
     {
-        if (isset($this->alias[$alias])) {
-            return $this->alias[$alias];
-        }
-
-        return null;
+        return isset($this->alias[$alias]);
     }
 
     /**
@@ -254,14 +296,14 @@ class CSVReader implements Iterator
     /**
      * Method to get the header titles
      *
-     * @return string[]|null
+     * @return string[]
      */
     public function getHeaderTitles()
     {
         if (is_a($this->header, 'Godsgood33\CSVReader\CSVHeader')) {
             return $this->header->getTitles();
         }
-        return null;
+        return [];
     }
 
     /**
@@ -350,8 +392,8 @@ class CSVReader implements Iterator
         $row = 0;
         $this->index = 0;
 
-        if (!is_resource($this->fh)) {
-            throw new FileException('Invalid file');
+        if (!$this->fh) {
+            return;
         }
 
         // loop until you get to the header row
@@ -375,7 +417,7 @@ class CSVReader implements Iterator
      *
      * @return array<string, string>
      */
-    public function current(): mixed
+    public function current(): array
     {
         $ret = [];
 
@@ -393,6 +435,8 @@ class CSVReader implements Iterator
     /**
      * Read the next row
      *
+     * @throws FileException
+     *
      * @return bool
      */
     #[\ReturnTypeWillChange]
@@ -404,7 +448,6 @@ class CSVReader implements Iterator
         $tmp = fgetcsv($this->fh, 0, $this->delimiter, $this->enclosure, $this->escape);
         if (!$tmp && feof($this->fh)) {
             return false;
-            //throw new FileException('End of file');
         }
 
         $this->data = $tmp;
@@ -415,9 +458,9 @@ class CSVReader implements Iterator
     /**
      * Return the current row number (excluding the header row)
      *
-     * @return mixed
+     * @return int
      */
-    public function key(): mixed
+    public function key(): int
     {
         // start at the current row index and then subtract whatever the header row is supposed to be on
         return $this->index - $this->headerIndex;
