@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Godsgood33\CSVReaderTests;
 
-require_once dirname(__DIR__) . "/vendor/autoload.php";
-
 use Exception;
 use Godsgood33\CSVReader\CSVHeader;
 use Godsgood33\CSVReader\CSVReader;
@@ -295,6 +293,63 @@ final class CSVReaderTest extends \PHPUnit\Framework\TestCase
         );
         $this->csvreader->addMap('full_title', "%0 (%1)", ['title', 'year']);
         $this->assertEquals("300 (2007)", $this->csvreader->full_title);
+    }
+
+    public function testLargeMap()
+    {
+        $this->csvreader = new CSVReader(
+            __DIR__.'/movie-library.csv'
+        );
+        $this->csvreader->addMap('test', "%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10", [
+            'id', 'guid', 'media_item_count', 'title', 'title_sort', 'original_title',
+             'studio', 'content_rating', 'duration', 'tags_genre', 'tags_collection'
+        ]);
+        $this->assertEquals(
+            "138, plex://movie/5d7768296f4521001ea99959, 1, 300, 300, , Virtual Studios, R, 7020000, War|Action, 300|test",
+            $this->csvreader->test
+        );
+    }
+
+    public function testMapStringFieldDifference()
+    {
+        $this->csvreader = new CSVReader(
+            __DIR__.'/movie-library.csv'
+        );
+        $this->csvreader->addMap('test', "%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10", [
+            'id', 'guid', 'media_item_count', 'title', 'title_sort', 'original_title',
+        ]);
+        $this->assertEquals(
+            "138, plex://movie/5d7768296f4521001ea99959, 1, 300, 300, , %6, %7, %8, %9, plex://movie/5d7768296f4521001ea999590",
+            $this->csvreader->test
+        );
+    }
+
+    public function testMapStringMultipleInstance()
+    {
+        $this->csvreader = new CSVReader(
+            __DIR__.'/movie-library.csv'
+        );
+        $this->csvreader->addMap('test', "%0, %0", [
+            'id',
+        ]);
+        $this->assertEquals(
+            "138, 138",
+            $this->csvreader->test
+        );
+    }
+
+    public function testMapMoreFieldsThanString()
+    {
+        $this->csvreader = new CSVReader(
+            __DIR__.'/movie-library.csv'
+        );
+        $this->csvreader->addMap('test', "%0, %1, %2", [
+            'id', 'guid', 'media_item_count', 'title', 'title_sort',
+        ]);
+        $this->assertEquals(
+            "138, plex://movie/5d7768296f4521001ea99959, 1",
+            $this->csvreader->test
+        );
     }
 
     public function testSetFilter()
