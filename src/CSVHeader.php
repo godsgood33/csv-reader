@@ -29,11 +29,11 @@ class CSVHeader
      * Constructor method
      *
      * @param array<int, string> $header
-     * @param string[]|null $requiredHeaders
+     * @param string[] $requiredHeaders
      *
      * @throws InvalidHeaderOrField
      */
-    public function __construct(array $header, ?array $requiredHeaders = null)
+    public function __construct(array $header, array $requiredHeaders = [])
     {
         // check that there is valid header data
         if (empty($header)) {
@@ -42,21 +42,39 @@ class CSVHeader
 
         // loop through each header field to strip out invalid characters and
         // reverse the key/value pairs to get the index of each header field
-        foreach ($header as $row => $h) {
-            $h = preg_replace("/[^a-zA-Z0-9_]/", "", $h);
-            if (empty($h)) {
-                throw new InvalidHeaderOrField("Empty header");
-            }
-            $this->header[$h] = $row;
-        }
+        $this->header = $this->stripColumns($header);
 
-        if ($requiredHeaders && !$this->checkHeaders($requiredHeaders)) {
-            throw new InvalidHeaderOrField("Missing Headers (".
+        $reqHeadersMissing = $this->checkHeaders($requiredHeaders);
+
+        if ($reqHeadersMissing !== true) {
+            throw new InvalidHeaderOrField("{$reqHeadersMissing} Missing from headers (".
                 implode(",", $requiredHeaders).")");
         }
 
         // store the original header titles
         $this->titles = $header;
+    }
+
+    /**
+     * Method to strip invalid characters from columns headers
+     *
+     * @param array $columns
+     *
+     * @return array
+     *
+     * @throws InvalidHeaderOrField
+     */
+    private function stripColumns(array $columns): array
+    {
+        $ret = [];
+        foreach ($columns as $columnIndex => $h) {
+            $h = preg_replace("/[^a-zA-Z0-9_]/", "", $h);
+            if (empty($h)) {
+                throw new InvalidHeaderOrField("Empty header");
+            }
+            $ret[$h] = $columnIndex;
+        }
+        return $ret;
     }
 
     /**
@@ -66,11 +84,7 @@ class CSVHeader
      */
     public function __get(string $field)
     {
-        if (isset($this->header[$field])) {
-            return $this->header[$field];
-        }
-
-        return null;
+        return $this->header[$field] ?? null;
     }
 
     /**
@@ -96,17 +110,18 @@ class CSVHeader
     /**
      * Method to check that all required headers are present in the file
      *
-     * @param string[] $req_headers
+     * @param string[] $requiredHeaders
      *      An array of headers that are required
      *
-     * @return bool
+     * @return bool|string
      *      Returns TRUE only if ALL required headers are present, otherwise FALSE
      */
-    public function checkHeaders(array $req_headers): bool
+    private function checkHeaders(array $requiredHeaders)
     {
-        foreach ($req_headers as $h) {
-            if (!in_array($h, array_keys($this->header))) {
-                return false;
+        $keys = array_keys($this->header);
+        foreach ($requiredHeaders as $h) {
+            if (!in_array($h, $keys)) {
+                return $h;
             }
         }
 

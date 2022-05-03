@@ -163,7 +163,7 @@ final class CSVReaderTest extends \PHPUnit\Framework\TestCase
 
     public function testRequiredHeaderOneMissing()
     {
-        $this->expectExceptionMessage("Missing Headers (Item,SKU,Qty,Price,Cost,MissingField)");
+        $this->expectExceptionMessage("MissingField Missing from headers (Item,SKU,Qty,Price,Cost,MissingField)");
         $req_headers = ["Item","SKU","Qty","Price","Cost","MissingField"];
         $this->csvreader = new CSVReader(__DIR__ . "/Example.csv", ['required_headers' => $req_headers]);
     }
@@ -352,24 +352,33 @@ final class CSVReaderTest extends \PHPUnit\Framework\TestCase
         );
     }
 
-    public function testSetFilter()
+    public function testSetFilterStaticMethod()
     {
+        // add filter to reverse string
         $this->csvreader->addFilter('SKU', [CSVReaderTest::class, 'skuFilter']);
         $this->assertEquals("SSPH", $this->csvreader->SKU);
     }
 
+    public function testSetFilterCallableObject()
+    {
+        $t = new Test();
+        $this->csvreader->addFilter('SKU', [$t, 'foo']);
+        $this->assertEquals('bar', $this->csvreader->SKU);
+    }
+
     public function testFilterOnAlias()
     {
+        // create object, add alias to collection and genre
         $this->csvreader = new CSVReader(
             __DIR__.'/movie-library.csv',
             [
                 'alias' => [
-                    'collection' => 'tags_collection',
-                    'genre' => 'tags_genre'
+                    'collection' => 'tags_collection'
                 ]
             ]
         );
 
+        // add filter on original field and check that filter is called on alias
         $this->csvreader->addFilter('tags_collection', [CSVReaderTest::class, 'splitCollection']);
         $this->assertEquals(['300', 'test'], $this->csvreader->collection);
     }
@@ -385,11 +394,25 @@ final class CSVReaderTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals('/', $this->csvreader->escape);
     }
 
+    /**
+     * Test method to just reverse a string
+     *
+     * @param string $val
+     *
+     * @return string
+     */
     public static function skuFilter($val): string
     {
         return strrev($val);
     }
 
+    /**
+     * Test method to take a string and split with the pipe character (|)
+     *
+     * @param string $val
+     *
+     * @return array
+     */
     public static function splitCollection($val): array
     {
         return explode('|', $val);

@@ -149,22 +149,21 @@ class CSVReader implements Iterator
             $field = $this->alias[$field];
         }
 
-        $headerIndex = $this->header->{$field};
-        if ($headerIndex !== null) {
-            $val = $this->data[$headerIndex];
-
-            if ($this->hasFilter($field)) {
-                return $this->callFilter($field, $val);
-            } else {
-                return $val;
-            }
-        }
-
         if ($this->isMap($field)) {
             return $this->getMap($field);
         }
 
-        return $headerIndex;
+        $val = null;
+        $headerIndex = $this->header->{$field};
+        if ($headerIndex !== null) {
+            $val = $this->data[$headerIndex];
+        }
+
+        if ($this->hasFilter($field)) {
+            return $this->callFilter($field, $val);
+        }
+
+        return $val;
     }
 
     /**
@@ -326,15 +325,17 @@ class CSVReader implements Iterator
     private function checkFile(string $filename)
     {
         if (substr($filename, 0, 4) == 'http') {
-            $res = @get_headers($filename);
+            $res = @get_headers($filename, true);
             if (is_array($res) && $res[0] != 'HTTP/1.1 200 OK') {
                 throw new FileException("Unable to access remote file");
-            } elseif (!$res) {
-                throw new FileException('Unable to access remote file');
             }
-        } elseif (!file_exists($filename) || !is_readable($filename)) {
+            return;
+        }
+        
+        if (!file_exists($filename) || !is_readable($filename)) {
             throw new FileException("File does not exist or is not readable");
-        } elseif (!filesize($filename)) {
+        }
+        if (!filesize($filename)) {
             throw new FileException("File is empty");
         }
     }
