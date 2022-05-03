@@ -85,8 +85,7 @@ final class CSVReaderTest extends \PHPUnit\Framework\TestCase
             'propToLower' => true
         ]);
 
-        $this->assertInstanceOf("Godsgood33\CSVReader\CSVReader", $this->csvreader);
-
+        $this->assertNull($this->csvreader->SKU);
         $this->assertEquals('HPSS', $this->csvreader->sku);
     }
 

@@ -252,7 +252,7 @@ class CSVReader implements Iterator
      *
      * @return mixed
      */
-    private function callFilter(string $field, string $val)
+    private function callFilter(string $field, ?string $val)
     {
         return call_user_func($this->filter[$field], $val);
     }

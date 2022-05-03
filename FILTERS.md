@@ -1,6 +1,6 @@
 # Filters
 
-The filters can be a really powerful option when parsing a file.  The could be used to validate the file contents before ingesting them into the system, for manipulating the data and removing or adding characters, adding in other data so that it works better in a database, or creating an object from a dataset.
+The filters can be a really powerful option when parsing a file.  They can be used to validate file contents before ingesting them into the system, for manipulating the data and removing or adding characters, adding in other data so that it works better in a database, or creating an object from the row.
 
 *NOTE: Filters do not work with Maps*
 
