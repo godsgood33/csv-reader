@@ -133,6 +133,7 @@ class CSVReader implements Iterator
 
     /**
      * Magic getter method to return the value at the given header index
+     * **NOTE: Will also retrieve option values**
      *
      * @param string $field
      *
@@ -148,30 +149,32 @@ class CSVReader implements Iterator
             $field = $this->alias[$field];
         }
 
-        $headerIndex = $this->header->{$field};
-        if ($headerIndex !== null) {
-            $val = $this->data[$headerIndex];
-
-            if ($this->hasFilter($field)) {
-                return $this->callFilter($field, $val);
-            } else {
-                return $val;
-            }
-        }
-
         if ($this->isMap($field)) {
             return $this->getMap($field);
         }
 
-        return $headerIndex;
+        $val = null;
+        $headerIndex = $this->header->{$field};
+        if ($headerIndex !== null) {
+            $val = $this->data[$headerIndex];
+        }
+
+        if ($this->hasFilter($field)) {
+            return $this->callFilter($field, $val);
+        }
+
+        return $val;
     }
 
     /**
      * Method to add a map to the array
      *
      * @param string $column
+     *      Column that will trigger this map
      * @param string $format
+     *      The format of the returned string
      * @param array $fields
+     *      Array of fields from the CSV file to put into the string
      */
     public function addMap(string $column, string $format, array $fields): void
     {
@@ -202,10 +205,14 @@ class CSVReader implements Iterator
      */
     private function getMap(string $column): string
     {
+        // get the string all this is going into
         $ret = $this->map[$column]['format'];
 
-        for ($x = 0; $x < count($this->map[$column]['fields']); $x++) {
+        // loop starting at the end so that lower indexes don't replace larger ones %1 -> %10
+        for ($x = count($this->map[$column]['fields']) - 1; $x >= 0; $x--) {
+            // retrieve the value of the field
             $var = $this->{$this->map[$column]['fields'][$x]};
+            // string replace the index with the value of the field
             $ret = str_replace("%".$x, $var, $ret);
         }
 
@@ -245,7 +252,7 @@ class CSVReader implements Iterator
      *
      * @return mixed
      */
-    private function callFilter(string $field, string $val)
+    private function callFilter(string $field, ?string $val)
     {
         return call_user_func($this->filter[$field], $val);
     }
@@ -318,15 +325,17 @@ class CSVReader implements Iterator
     private function checkFile(string $filename)
     {
         if (substr($filename, 0, 4) == 'http') {
-            $res = @get_headers($filename);
+            $res = @get_headers($filename, true);
             if (is_array($res) && $res[0] != 'HTTP/1.1 200 OK') {
                 throw new FileException("Unable to access remote file");
-            } elseif (!$res) {
-                throw new FileException('Unable to access remote file');
             }
-        } elseif (!file_exists($filename) || !is_readable($filename)) {
+            return;
+        }
+        
+        if (!file_exists($filename) || !is_readable($filename)) {
             throw new FileException("File does not exist or is not readable");
-        } elseif (!filesize($filename)) {
+        }
+        if (!filesize($filename)) {
             throw new FileException("File is empty");
         }
     }
@@ -348,36 +357,18 @@ class CSVReader implements Iterator
      */
     private function checkOptions(?array $options)
     {
-        // check to see if any options were passed in
-        if (is_array($options) && count($options)) {
-            if (isset($options['delimiter'])) {
-                $this->options['delimiter'] = $options['delimiter'];
-            }
-
-            if (isset($options['enclosure'])) {
-                $this->options['enclosure'] = $options['enclosure'];
-            }
-
-            if (isset($options['escape'])) {
-                $this->options['escape'] = $options['escape'];
-            }
-
-            if (isset($options['header']) && is_int($options['header'])) {
-                $this->options['headerIndex'] = $options['header'];
-            }
-
-            if (isset($options['required_headers']) && is_countable($options['required_headers'])) {
-                $this->options['required_headers'] = $options['required_headers'];
-            }
-
-            if (isset($options['alias']) && is_countable($options['alias'])) {
-                $this->options['alias'] = $options['alias'];
-            }
-
-            if (isset($options['propToLower'])) {
-                $this->options['propToLower'] = (bool) $options['propToLower'];
-            }
+        if (!is_array($options) || !count($options)) {
+            return;
         }
+
+        // check to see if any options were passed in
+        $this->options['delimiter'] = $options['delimiter'] ?? ",";
+        $this->options['enclosure'] = $options['enclosure'] ?? '"';
+        $this->options['escape'] = $options['escape'] ?? "\\";
+        $this->options['headerIndex'] = $options['header'] ?? 0;
+        $this->options['required_headers'] = $options['required_headers'] ?? [];
+        $this->options['alias'] = $options['alias'] ?? [];
+        $this->options['propToLower'] = $options['propToLower'] ?? false;
     }
 
     /**

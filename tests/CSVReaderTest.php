@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Godsgood33\CSVReaderTests;
 
-require_once dirname(__DIR__) . "/vendor/autoload.php";
-
 use Exception;
 use Godsgood33\CSVReader\CSVHeader;
 use Godsgood33\CSVReader\CSVReader;
@@ -87,8 +85,7 @@ final class CSVReaderTest extends \PHPUnit\Framework\TestCase
             'propToLower' => true
         ]);
 
-        $this->assertInstanceOf("Godsgood33\CSVReader\CSVReader", $this->csvreader);
-
+        $this->assertNull($this->csvreader->SKU);
         $this->assertEquals('HPSS', $this->csvreader->sku);
     }
 
@@ -165,7 +162,7 @@ final class CSVReaderTest extends \PHPUnit\Framework\TestCase
 
     public function testRequiredHeaderOneMissing()
     {
-        $this->expectExceptionMessage("Missing Headers (Item,SKU,Qty,Price,Cost,MissingField)");
+        $this->expectExceptionMessage("MissingField Missing from headers (Item,SKU,Qty,Price,Cost,MissingField)");
         $req_headers = ["Item","SKU","Qty","Price","Cost","MissingField"];
         $this->csvreader = new CSVReader(__DIR__ . "/Example.csv", ['required_headers' => $req_headers]);
     }
@@ -297,24 +294,90 @@ final class CSVReaderTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals("300 (2007)", $this->csvreader->full_title);
     }
 
-    public function testSetFilter()
+    public function testLargeMap()
     {
+        $this->csvreader = new CSVReader(
+            __DIR__.'/movie-library.csv'
+        );
+        $this->csvreader->addMap('test', "%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10", [
+            'id', 'guid', 'media_item_count', 'title', 'title_sort', 'original_title',
+             'studio', 'content_rating', 'duration', 'tags_genre', 'tags_collection'
+        ]);
+        $this->assertEquals(
+            "138, plex://movie/5d7768296f4521001ea99959, 1, 300, 300, , Virtual Studios, R, 7020000, War|Action, 300|test",
+            $this->csvreader->test
+        );
+    }
+
+    public function testMapStringFieldDifference()
+    {
+        $this->csvreader = new CSVReader(
+            __DIR__.'/movie-library.csv'
+        );
+        $this->csvreader->addMap('test', "%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10", [
+            'id', 'guid', 'media_item_count', 'title', 'title_sort', 'original_title',
+        ]);
+        $this->assertEquals(
+            "138, plex://movie/5d7768296f4521001ea99959, 1, 300, 300, , %6, %7, %8, %9, plex://movie/5d7768296f4521001ea999590",
+            $this->csvreader->test
+        );
+    }
+
+    public function testMapStringMultipleInstance()
+    {
+        $this->csvreader = new CSVReader(
+            __DIR__.'/movie-library.csv'
+        );
+        $this->csvreader->addMap('test', "%0, %0", [
+            'id',
+        ]);
+        $this->assertEquals(
+            "138, 138",
+            $this->csvreader->test
+        );
+    }
+
+    public function testMapMoreFieldsThanString()
+    {
+        $this->csvreader = new CSVReader(
+            __DIR__.'/movie-library.csv'
+        );
+        $this->csvreader->addMap('test', "%0, %1, %2", [
+            'id', 'guid', 'media_item_count', 'title', 'title_sort',
+        ]);
+        $this->assertEquals(
+            "138, plex://movie/5d7768296f4521001ea99959, 1",
+            $this->csvreader->test
+        );
+    }
+
+    public function testSetFilterStaticMethod()
+    {
+        // add filter to reverse string
         $this->csvreader->addFilter('SKU', [CSVReaderTest::class, 'skuFilter']);
         $this->assertEquals("SSPH", $this->csvreader->SKU);
     }
 
+    public function testSetFilterCallableObject()
+    {
+        $t = new Test();
+        $this->csvreader->addFilter('SKU', [$t, 'foo']);
+        $this->assertEquals('bar', $this->csvreader->SKU);
+    }
+
     public function testFilterOnAlias()
     {
+        // create object, add alias to collection and genre
         $this->csvreader = new CSVReader(
             __DIR__.'/movie-library.csv',
             [
                 'alias' => [
-                    'collection' => 'tags_collection',
-                    'genre' => 'tags_genre'
+                    'collection' => 'tags_collection'
                 ]
             ]
         );
 
+        // add filter on original field and check that filter is called on alias
         $this->csvreader->addFilter('tags_collection', [CSVReaderTest::class, 'splitCollection']);
         $this->assertEquals(['300', 'test'], $this->csvreader->collection);
     }
@@ -330,11 +393,25 @@ final class CSVReaderTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals('/', $this->csvreader->escape);
     }
 
+    /**
+     * Test method to just reverse a string
+     *
+     * @param string $val
+     *
+     * @return string
+     */
     public static function skuFilter($val): string
     {
         return strrev($val);
     }
 
+    /**
+     * Test method to take a string and split with the pipe character (|)
+     *
+     * @param string $val
+     *
+     * @return array
+     */
     public static function splitCollection($val): array
     {
         return explode('|', $val);
