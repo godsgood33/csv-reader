@@ -258,6 +258,41 @@ class CSVReader implements Iterator
     }
 
     /**
+     * Method to add an alias
+     *
+     * @param string $alias
+     * @param string $field
+     *
+     * @return bool
+	 */
+	public function addAlias(string $alias, string $field): bool
+    {
+		if (isset($this->alias[$alias])) {
+			return false;
+		}
+
+		$this->alias[$alias] = $field;
+		return true;
+	}
+
+	/**
+	 * Method to remove an alias
+	 *
+	 * @param string $alias
+	 *
+	 * @return bool
+	 */
+	public function removeAlias(string $alias): bool
+	{
+		if (!isset($this->alias[$alias])) {
+			return false;
+		}
+
+		unset($this->alias[$alias]);
+		return true;
+	}
+
+    /**
      * Method to check if there is an alias
      *
      * @param string $alias
