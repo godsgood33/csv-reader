@@ -9,7 +9,7 @@ use Godsgood33\CSVReader\Exceptions\InvalidHeaderOrField;
  *
  * @author Ryan Prather <godsgood33@gmail.com>
  */
-class CSVHeader
+class Header
 {
     /**
      * Header titles after sanitizing
@@ -85,6 +85,18 @@ class CSVHeader
     public function __get(string $field)
     {
         return $this->header[$field] ?? null;
+    }
+
+    /**
+     * Method to check if a field exists
+     * 
+     * @param string $field
+     * 
+     * @return bool
+     */
+    public function fieldExists(string $field): bool
+    {
+        return isset($this->header[$field]);
     }
 
     /**
