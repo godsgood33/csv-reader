@@ -1,6 +1,6 @@
 # Filters
 
-The filters can be a really powerful option when parsing a file.  They can be used to validate file contents before ingesting them into the system, for manipulating the data and removing or adding characters, adding in other data so that it works better in a database, or creating an object from the row.
+The filters can be a really powerful option when parsing a file.  They can be used to validate file contents before ingesting them into the system, for manipulating the data by removing or adding characters, adding in other data so that it works better in a database, or creating an object from the row.
 
 *NOTE: Filters do not work with Maps*
 
@@ -16,7 +16,7 @@ ID      | Name                | Phone
 Once you open the file you need to add the filter with a callback method.
 
 ```
-$reader = new CSVReader('/path/to/file.csv');
+$reader = new Reader('/path/to/file.csv');
 $reader->addFilter('Phone', [Employee::class, 'stripPhone']);
 ```
 
@@ -39,7 +39,6 @@ If you follow the above it will return
 Another example, address data.  So you have a file that has customer data and each customer's address data is all in one field instead of separate fields.  You want to split those into a `Address` class object.
 
 ```
-...
 ... | Address                           | ...
 ... | 123 Main St, Anytown, ST 12345    | ...
 ...
@@ -77,7 +76,7 @@ You could then just have the reader pass the Address field directly into the add
 ```
 class Customer
 {
-    private Address $address;
+    public Address $address;
     ...
 }
 
