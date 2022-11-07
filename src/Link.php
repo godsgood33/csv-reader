@@ -1,0 +1,62 @@
+<?php
+
+namespace Godsgood33\CSVReader;
+
+use BadMethodCallException;
+use stdClass;
+
+/**
+ *
+ */
+class Link
+{
+
+    /**
+     * Column that triggers this link
+     *
+     * @var string
+     */
+    public string $column;
+
+    /**
+     * Variable to store the callback in
+     *
+     * @var callable
+     */
+    private $callback;
+
+    /**
+     * Variable to store the fields that need to be combined
+     *
+     * @var array
+     */
+    public array $fields;
+
+    /**
+     * Constructor
+     *
+     * @param callable $callback
+     */
+    public function __construct(string $column, callable $callback, array $fields)
+    {
+        if (!is_callable($callback)) {
+            throw new BadMethodCallException("Callback for field {$column} not callable");
+        }
+
+        $this->column = $column;
+        $this->callback = $callback;
+        $this->fields = $fields;
+    }
+
+    /**
+     * Method to trigger a callback and return the result of that method
+     *
+     * @param stdClass $values
+     *
+     * @return mixed
+     */
+    public function trigger(stdClass $values)
+    {
+        return call_user_func($this->callback, $values);
+    }
+}

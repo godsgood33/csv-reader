@@ -40,7 +40,7 @@ composer require godsgood33/csv-reader
 Pass your CSV filename into the class and create an object
 
 ```
-$reader = new CSVReader($csvFilename);
+$reader = new Reader($csvFilename);
 ```
 
 ### **Options**
@@ -69,14 +69,14 @@ These options are available as an associative array as the second parameter of t
     - ['Name', 'PhoneNumber', 'Email']
 
 ```
-$reader = new CSVReader($csvFilename, ['delimiter' => ';', 'enclosure' => "'", 'header' => 1, 'propToLower' => true]);
+$reader = new Reader($csvFilename, ['delimiter' => ';', 'enclosure' => "'", 'header' => 1, 'propToLower' => true]);
 ```
 
-The CSVReader will remove any non-alphanumeric characters `[^a-zA-Z0-9_]`.
+The Reader will remove any non-alphanumeric characters `[^a-zA-Z0-9_]`.
 
 After this is done, all you need to do is start looping until the end of the file is reached or the data you're looking for is found.
 
-NOTE: CSVReader will automatically read the first row after the header after it is done parsing so **DON'T use a `while` loop**
+NOTE: Reader will automatically read the first row after the header after it is done parsing so **DON'T use a `while` loop**
 
 ```
 do {
@@ -99,7 +99,7 @@ do {
 If there are required headers that you must have in your file you can specify them in the 'required_headers' option passed in at instantiation time.
 
 ```
-$reader = new CSVReader('file.csv', ['required_headers' => [
+$reader = new Reader('file.csv', ['required_headers' => [
     'name', 'phone', 'email'
 ]]);
 ```
@@ -111,7 +111,7 @@ This will throw a `MissingRequiredHeader` exception if the required headers are 
 If you would like to specify that a field has an alias name you can specify that with the `'alias'` associative array option.  The key parameter is the alias and the value is the field it points to.
 
 ```
-$reader = new CSVReader('file.csv', ['alias' => ['digits' => 'phone']]);
+$reader = new Reader('file.csv', ['alias' => ['digits' => 'phone']]);
 ```
 
 The above would allow you to use the either of the following:
@@ -125,7 +125,7 @@ $phone = $reader->phone;
 
 [Full Explanation](./MAPS.md)
 
-Maps in CSVReader are a way that you can read multiple fields at once and return all of them in a formatted string.  
+Maps in Reader are a way that you can read multiple fields at once and return all of them in a formatted string.  
 
 ## Filters
 

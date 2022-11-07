@@ -3,9 +3,9 @@
 namespace Godsgood33\CSVReader;
 
 use Iterator;
-
 use Godsgood33\CSVReader\Exceptions\InvalidHeaderOrField;
 use Godsgood33\CSVReader\Exceptions\FileException;
+use stdClass;
 
 /**
  * Class to read CSV files using the header row as the field title
@@ -29,7 +29,7 @@ use Godsgood33\CSVReader\Exceptions\FileException;
  *
  * @author Ryan Prather <godsgood3@gmail.com>
  */
-class CSVReader implements Iterator
+class Reader implements Iterator
 {
     /**
      * File handler for the CSV file
@@ -48,9 +48,9 @@ class CSVReader implements Iterator
     /**
      * Header
      *
-     * @var CSVHeader
+     * @var Header
      */
-    private CSVHeader $header;
+    private Header $header;
 
     /**
      * Index of the row
@@ -62,23 +62,30 @@ class CSVReader implements Iterator
     /**
      * Array to store the data in the row
      *
-     * @var array<int, string>
+     * @var array<int, string|array|bool>
      */
     private array $data;
 
     /**
      * Array to store mapping
      *
-     * @var array<string, array>
+     * @var array<string, Map>
      */
     private array $map;
 
     /**
      * Array to store filters
      *
-     * @var array<string, callable>
+     * @var array<string, Filter>
      */
     private array $filter;
+
+    /**
+     * Array to store links
+     *
+     * @var array<string, Link>
+     */
+    private array $links;
 
     /**
      * Variable to store the filename that is being parsed
@@ -150,7 +157,11 @@ class CSVReader implements Iterator
         }
 
         if ($this->isMap($field)) {
-            return $this->getMap($field);
+            return $this->triggerMap($field);
+        }
+
+        if ($this->isLink($field)) {
+            return $this->triggerLink($field);
         }
 
         $val = null;
@@ -160,28 +171,10 @@ class CSVReader implements Iterator
         }
 
         if ($this->hasFilter($field)) {
-            return $this->callFilter($field, $val);
+            return $this->triggerFilter($field, $val);
         }
 
         return $val;
-    }
-
-    /**
-     * Method to add a map to the array
-     *
-     * @param string $column
-     *      Column that will trigger this map
-     * @param string $format
-     *      The format of the returned string
-     * @param array $fields
-     *      Array of fields from the CSV file to put into the string
-     */
-    public function addMap(string $column, string $format, array $fields): void
-    {
-        $this->map[$column] = [
-            'fields' => $fields,
-            'format' => $format
-        ];
     }
 
     /**
@@ -197,43 +190,48 @@ class CSVReader implements Iterator
     }
 
     /**
+     * Method to add a map to the array
+     *
+     * @param Map $map
+     *
+     * @return bool
+     */
+    public function addMap(Map $map): bool
+    {
+        if (isset($this->map[$map->column])) {
+            throw new InvalidHeaderOrField('Map column already exists');
+        }
+
+        foreach ($map->fields as $f) {
+            if (is_null($this->header->{$f})) {
+                throw new InvalidHeaderOrField("Header for Map not found ($f)");
+            }
+        }
+
+        $this->map[$map->column] = $map;
+        return true;
+    }
+
+    /**
      * Method to retrieve the map data and return the formatted string
      *
      * @param string $column
      *
      * @return string
      */
-    private function getMap(string $column): string
+    private function triggerMap(string $column): string
     {
-        // get the string all this is going into
-        $ret = $this->map[$column]['format'];
-
-        // loop starting at the end so that lower indexes don't replace larger ones %1 -> %10
-        for ($x = count($this->map[$column]['fields']) - 1; $x >= 0; $x--) {
-            // retrieve the value of the field
-            $var = $this->{$this->map[$column]['fields'][$x]};
-            // string replace the index with the value of the field
-            $ret = str_replace("%".$x, $var, $ret);
+        $vals = [];
+        $map = $this->map[$column];
+        foreach ($map->fields as $f) {
+            $vals[] = $this->{$f};
         }
 
-        return $ret;
+        return $map->trigger($vals);
     }
 
     /**
-     * Method to add a filter to the object
-     *
-     * @param string $filter
-     * @param callable $func
-     */
-    public function addFilter(string $filter, callable $func): void
-    {
-        if (is_callable($func)) {
-            $this->filter[$filter] = $func;
-        }
-    }
-
-    /**
-     * Method to check if a field has a fil404ter
+     * Method to check if a field has a filter
      *
      * @param string $field
      *
@@ -245,6 +243,40 @@ class CSVReader implements Iterator
     }
 
     /**
+     * Method to add a filter to the object
+     *
+     * @param Filter $filter
+     *
+     * @return bool
+     */
+    public function addFilter(Filter $filter): bool
+    {
+        if (!$this->header->fieldExists($filter->column) && !isset($this->alias[$filter->column])) {
+            return false;
+        }
+
+        $this->filter[$filter->column] = $filter;
+        return true;
+    }
+
+    /**
+     * Method to remove a filter
+     *
+     * @param string $filter
+     *
+     * @return bool
+     */
+    public function removeFilter(string $filter): bool
+    {
+        if (isset($this->filter[$filter])) {
+            unset($this->filter[$filter]);
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Method to call a filter
      *
      * @param string $field
@@ -252,9 +284,80 @@ class CSVReader implements Iterator
      *
      * @return mixed
      */
-    private function callFilter(string $field, ?string $val)
+    private function triggerFilter(string $field, ?string $val)
     {
-        return call_user_func($this->filter[$field], $val);
+        if (!$this->hasFilter($field)) {
+            throw new InvalidHeaderOrField("Filter for field {$field} not found");
+        }
+
+        return $this->filter[$field]->trigger($val);
+    }
+
+    /**
+     * Method to check if a link is present in the system
+     *
+     * @param string $column
+     *
+     * @return bool
+     */
+    public function isLink(string $column): bool
+    {
+        return isset($this->links[$column]);
+    }
+
+    /**
+     * Method to add a link to the system
+     *
+     * @param Link $link
+     *
+     * @return bool
+     */
+    public function addLink(Link $link): bool
+    {
+        if ($this->isLink($link->column)) {
+            throw new InvalidHeaderOrField("Link for column {$link->column} already present");
+        }
+
+        $this->links[$link->column] = $link;
+
+        return true;
+    }
+
+    /**
+     * Method to remove a link
+     *
+     * @param string $column
+     *
+     * @return bool
+     */
+    public function removeLink(string $column): bool
+    {
+        if (isset($this->links[$column])) {
+            unset($this->links[$column]);
+            return true;
+        }
+        return true;
+    }
+
+    /**
+     * Trigger a link
+     *
+     * @param string $column
+     *
+     * @return mixed
+     */
+    public function triggerLink(string $column)
+    {
+        $ret = new stdClass();
+        $link = $this->links[$column];
+
+        foreach ($link->fields as $f) {
+            $val = $this->{$f};
+
+            $ret->{$f} = $val;
+        }
+
+        return $link->trigger($ret);
     }
 
     /**
@@ -264,33 +367,37 @@ class CSVReader implements Iterator
      * @param string $field
      *
      * @return bool
-	 */
-	public function addAlias(string $alias, string $field): bool
+     */
+    public function addAlias(string $alias, string $field): bool
     {
-		if (isset($this->alias[$alias])) {
-			return false;
-		}
+        if (isset($this->alias[$alias])) {
+            return false;
+        }
 
-		$this->alias[$alias] = $field;
-		return true;
-	}
+        if (!$this->header->fieldExists($field)) {
+            return false;
+        }
 
-	/**
-	 * Method to remove an alias
-	 *
-	 * @param string $alias
-	 *
-	 * @return bool
-	 */
-	public function removeAlias(string $alias): bool
-	{
-		if (!isset($this->alias[$alias])) {
-			return false;
-		}
+        $this->alias[$alias] = $field;
+        return true;
+    }
 
-		unset($this->alias[$alias]);
-		return true;
-	}
+    /**
+     * Method to remove an alias
+     *
+     * @param string $alias
+     *
+     * @return bool
+     */
+    public function removeAlias(string $alias): bool
+    {
+        if (!isset($this->alias[$alias])) {
+            return false;
+        }
+
+        unset($this->alias[$alias]);
+        return true;
+    }
 
     /**
      * Method to check if there is an alias
@@ -342,7 +449,7 @@ class CSVReader implements Iterator
      */
     public function getHeaderTitles()
     {
-        if (is_a($this->header, 'Godsgood33\CSVReader\CSVHeader')) {
+        if (is_a($this->header, 'Godsgood33\CSVReader\Header')) {
             return $this->header->getTitles();
         }
         return [];
@@ -366,7 +473,7 @@ class CSVReader implements Iterator
             }
             return;
         }
-        
+
         if (!file_exists($filename) || !is_readable($filename)) {
             throw new FileException("File does not exist or is not readable");
         }
@@ -428,7 +535,7 @@ class CSVReader implements Iterator
                 if ($this->options['propToLower']) {
                     $data = array_map('strtolower', $data);
                 }
-                $this->header = new CSVHeader($data, $this->required_headers);
+                $this->header = new Header($data, $this->required_headers);
                 break;
             } else {
                 $row++;
@@ -447,7 +554,7 @@ class CSVReader implements Iterator
     {
         $ret = [];
 
-        if (!is_a($this->header, 'Godsgood33\CSVReader\CSVHeader')) {
+        if (!is_a($this->header, 'Godsgood33\CSVReader\Header')) {
             return $ret;
         }
 
