@@ -123,14 +123,18 @@ $phone = $reader->phone;
 
 ## Maps
 
-[Full Explanation](./MAPS.md)
+[Full Explanation](./docs/MAPS.md)
 
-Maps in Reader are a way that you can read multiple fields at once and return all of them in a formatted string.  
+Maps in `CSVReader` are a way that you can read multiple fields at once and return all of them in a formatted string.
 
 ## Filters
 
-[Full Explanation](./FILTERS.md)
+[Full Explanation](./docs/FILTERS.md)
 
-Filters can be a really powerful option when parsing a file.  They could be used to validate the file contents before ingesting them into the system, for manipulating the data, removing or adding characters, adding in other data so that it works better in a database or HTML, or creating an object from a dataset.  Filters can be used along with aliases, but you **MUST** do the filter on the field that is in the file...**not** the alias.  Filters do not work with Maps as those already include their own callback so you can do that functionality if you want.
+Filters can be a really powerful option when parsing a file. They can be used to validate the field values before ingesting them into the system, for manipulating the data, removing or adding characters, adding in other data so that it works better in a database or HTML, or creating an object from a field value.  Filters can be used along with aliases, but you **MUST** do the filter on the field that is in the file...**not** the alias. In the example above, the filter would have to be assigned to the `phone` field and not `digits`.  Filters do not work with Maps as those already include their own callback so the filter functionality can be accomplished in the `Map` callback.
 
-So in the alias example above, you must assign the filter on `phone` not `digits`.
+## Links
+
+[Full Explanation](./docs/LINKS.md)
+
+Links are a way that you can retrieve multiple fields at the same time and return them as a `stdClass` object or create your own object.
