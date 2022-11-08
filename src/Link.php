@@ -35,14 +35,12 @@ class Link
     /**
      * Constructor
      *
+     * @param string $column
+     * @param array $fields
      * @param callable $callback
      */
-    public function __construct(string $column, callable $callback, array $fields)
+    public function __construct(string $column, array $fields, ?callable $callback = null)
     {
-        if (!is_callable($callback)) {
-            throw new BadMethodCallException("Callback for field {$column} not callable");
-        }
-
         $this->column = $column;
         $this->callback = $callback;
         $this->fields = $fields;
@@ -57,6 +55,9 @@ class Link
      */
     public function trigger(stdClass $values)
     {
-        return call_user_func($this->callback, $values);
+        if (is_callable($this->callback)) {
+            return call_user_func($this->callback, $values);
+        }
+        return $values;
     }
 }
