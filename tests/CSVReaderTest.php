@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace Godsgood33\CSVReaderTests;
 
 use Exception;
+use stdClass;
 use Godsgood33\CSVReader\Header;
 use Godsgood33\CSVReader\Reader;
-use Godsgood33\CSVReader\Exceptions\FileException;
-use Godsgood33\CSVReader\Exceptions\InvalidHeaderOrField;
 use Godsgood33\CSVReader\Filter;
 use Godsgood33\CSVReader\Link;
 use Godsgood33\CSVReader\Map;
-use stdClass;
+use Godsgood33\CSVReader\Exceptions\FileException;
+use Godsgood33\CSVReader\Exceptions\InvalidHeaderOrField;
 
 /**
  * @coversDefaultClass Reader
@@ -397,11 +397,31 @@ final class CSVReaderTest extends \PHPUnit\Framework\TestCase
     public function testLink()
     {
         $this->csvreader = new Reader(__DIR__.'/movie-library.csv');
-        $link = new Link('object_data', [CSVReaderTest::class, 'linkObjectTest'], [
+        $link = new Link('object_data', [
+            'id', 'title', 'studio', 'content_rating', 'year'
+        ], [Address::class, 'fromCSV']);
+        $this->csvreader->addLink($link);
+        $res = $this->csvreader->object_data;
+        $expected = new Address();
+        $expected->id = 138;
+        $expected->title = '300';
+        $expected->studio = 'Virtual Studios';
+        $expected->content_rating = 'R';
+        $expected->year = 2007;
+
+        $this->assertIsObject($res);
+        $this->assertInstanceOf(Address::class, $res);
+        $this->assertEquals($expected, $res);
+    }
+
+    public function testLinkWithoutCallback()
+    {
+        $this->csvreader = new Reader(__DIR__.'/movie-library.csv');
+        $link = new Link('MovieData', [
             'id', 'title', 'studio', 'content_rating', 'year'
         ]);
         $this->csvreader->addLink($link);
-        $res = $this->csvreader->object_data;
+        $res = $this->csvreader->MovieData;
         $expected = new stdClass();
         $expected->id = 138;
         $expected->title = '300';
@@ -446,17 +466,5 @@ final class CSVReaderTest extends \PHPUnit\Framework\TestCase
     public static function splitCollection($val): array
     {
         return explode('|', $val);
-    }
-
-    /**
-     * Test method to test link data
-     *
-     * @param mixed $val
-     *
-     * @return stdClass
-     */
-    public static function linkObjectTest($val)
-    {
-        return $val;
     }
 }
