@@ -69,7 +69,12 @@ These options are available as an associative array as the second parameter of t
     - ['Name', 'PhoneNumber', 'Email']
 
 ```
-$reader = new Reader($csvFilename, ['delimiter' => ';', 'enclosure' => "'", 'header' => 1, 'propToLower' => true]);
+$reader = new Reader($csvFilename, [
+    'delimiter' => ';',
+    'enclosure' => "'",
+    'header' => 1,
+    'propToLower' => true
+]);
 ```
 
 The Reader will remove any non-alphanumeric characters `[^a-zA-Z0-9_]`.

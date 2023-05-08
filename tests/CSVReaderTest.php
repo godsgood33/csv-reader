@@ -67,7 +67,7 @@ final class CSVReaderTest extends \PHPUnit\Framework\TestCase
     {
         $titles = $this->csvreader->getHeaderTitles();
 
-        $this->assertEquals(['Item', 'SKU', 'Qty', 'Price', 'Cost'], $titles);
+        $this->assertEquals(['Item', 'SKU', 'Qty', 'Price', 'Cost', 'Director Name'], $titles);
     }
 
     public function testOptions()
@@ -83,14 +83,24 @@ final class CSVReaderTest extends \PHPUnit\Framework\TestCase
         $this->assertInstanceOf("Godsgood33\CSVReader\Reader", $this->csvreader);
     }
 
-    public function testPropToLower()
+    public function testHeaderToLower()
     {
         $this->csvreader = new Reader(__DIR__ . "/Example.csv", [
-            'propToLower' => true
+            'headerCase' => Header::TO_LOWER
         ]);
 
         $this->assertNull($this->csvreader->SKU);
         $this->assertEquals('HPSS', $this->csvreader->sku);
+    }
+
+    public function testHeaderToCamelCase()
+    {
+        $this->csvreader = new Reader(__DIR__ . '/Example.csv', [
+            'headerCase' => Header::TO_CAMEL_CASE
+        ]);
+
+        $this->assertNull($this->csvreader->DirectorName);
+        $this->assertEquals("Chris Columbus", $this->csvreader->directorName);
     }
 
     public function testGetLineCount()

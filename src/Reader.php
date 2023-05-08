@@ -24,8 +24,10 @@ use stdClass;
  *      an array of header fields that are required in the file
  * @property string[] $alias
  *      array of aliases and the field header they link to
- * @property bool $propToLower
- *      converts the header titles to lowercase
+ * @property int $headerCase
+ *      Change what case the properties should be available in
+ *          Header::TO_LOWER - converts the properties to all lower case
+ *          Header::TO_CAMEL_CASE - coverts the properties to camel case
  *
  * @author Ryan Prather <godsgood3@gmail.com>
  */
@@ -104,7 +106,7 @@ class Reader implements Iterator
      *      'enclosure'?: string,
      *      'escape'?: string,
      *      'headerIndex'?: int,
-     *      'propToLower'?: bool,
+     *      'headerCase'?: int,
      *      'required_headers'?: array<int, string>,
      *      'alias'?: array<int, string>
      * } $options
@@ -122,7 +124,7 @@ class Reader implements Iterator
             'headerIndex' => 0,
             'required_headers' => [],
             'alias' => [],
-            'propToLower' => false,
+            'headerCase' => false,
         ];
         $this->checkFile($filename);
         $this->checkOptions($options);
@@ -422,7 +424,7 @@ class Reader implements Iterator
     {
         if (in_array($field, [
             'delimiter', 'enclosure', 'escape', 'headerIndex',
-            'required_headers', 'alias', 'propToLower'
+            'required_headers', 'alias', 'headerCase'
         ])) {
             return true;
         }
@@ -492,7 +494,7 @@ class Reader implements Iterator
      *      'header'?: int,
      *      'required_headers'?: array<int, string>,
      *      'alias'?: array<int, string>,
-     *      'propToLower'?: bool
+     *      'headerCase'?: int
      * } $options
      *
      * @return void
@@ -510,7 +512,7 @@ class Reader implements Iterator
         $this->options['headerIndex'] = $options['header'] ?? 0;
         $this->options['required_headers'] = $options['required_headers'] ?? [];
         $this->options['alias'] = $options['alias'] ?? [];
-        $this->options['propToLower'] = $options['propToLower'] ?? false;
+        $this->options['headerCase'] = $options['headerCase'] ?? false;
     }
 
     /**
@@ -532,8 +534,10 @@ class Reader implements Iterator
         // loop until you get to the header row
         while ($data = fgetcsv($this->fh, 0, $this->delimiter, $this->enclosure, $this->escape)) {
             if ($row == $this->headerIndex) {
-                if ($this->options['propToLower']) {
+                if ($this->options['headerCase'] == Header::TO_LOWER) {
                     $data = array_map('strtolower', $data);
+                } elseif ($this->options['headerCase'] == Header::TO_CAMEL_CASE) {
+                    $data = Header::toCamelCase($data);
                 }
                 $this->header = new Header($data, $this->required_headers);
                 break;
