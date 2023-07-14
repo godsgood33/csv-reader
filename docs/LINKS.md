@@ -2,6 +2,8 @@
 
 Links are made so you can return multiple fields together. When calling, it will return the fields as a `stdClass` object with each field name being the property. The best example of something like this would be a multi-column address.
 
+***NOTE***: You can use `Maps` and `Filters` to inside a `Link`.  You would have to create the `Map` or `Filter` first and then add that trigger field to the `Link`.
+
 ## Customer.csv
 
 | ID | Name   | Address     | City    | State | Zip   | Country |
