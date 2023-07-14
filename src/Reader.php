@@ -62,6 +62,13 @@ class Reader implements Iterator
     private int $index;
 
     /**
+     * Number of lines
+     *
+     * @var int
+     */
+    private int $lineCount;
+
+    /**
      * Array to store the data in the row
      *
      * @var array<int, string|array|bool>
@@ -359,7 +366,10 @@ class Reader implements Iterator
             $ret->{$f} = $val;
         }
 
-        return $link->trigger($ret);
+        if (is_callable($link->callback)) {
+            return $link->trigger($ret);
+        }
+        return $ret;
     }
 
     /**
@@ -424,7 +434,7 @@ class Reader implements Iterator
     {
         if (in_array($field, [
             'delimiter', 'enclosure', 'escape', 'headerIndex',
-            'required_headers', 'alias', 'headerCase'
+            'required_headers', 'alias', 'headerCase', 'lineCount'
         ])) {
             return true;
         }
@@ -441,6 +451,9 @@ class Reader implements Iterator
      */
     private function getOption(string $field)
     {
+        if (isset($this->{$field})) {
+            return $this->{$field};
+        }
         return $this->options[$field];
     }
 
