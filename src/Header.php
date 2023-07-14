@@ -13,14 +13,14 @@ class Header
 {
     /**
      * Constant to convert headers to lower case
-     * 
+     *
      * @var int
      */
     public const TO_LOWER = 1;
 
     /**
      * Constant to convert headers to camel case
-     * 
+     *
      * @var int
      */
     public const TO_CAMEL_CASE = 2;
@@ -72,7 +72,7 @@ class Header
     /**
      * Method to strip invalid characters from columns headers
      *
-     * @param array $columns
+     * @param array<int, string> $columns
      *
      * @return array
      *
@@ -103,9 +103,9 @@ class Header
 
     /**
      * Method to check if a field exists
-     * 
+     *
      * @param string $field
-     * 
+     *
      * @return bool
      */
     public function fieldExists(string $field): bool
@@ -156,15 +156,15 @@ class Header
 
     /**
      * Method to convert header titles to camel case (e.g. phoneNumber)
-     * 
+     *
      * @param array $headers
-     * 
+     *
      * @return array
      */
     public static function toCamelCase(array $headers)
     {
         $ret = [];
-        foreach($headers as $h) {
+        foreach ($headers as $h) {
             $split = explode(' ', $h);
             $tmp = strtolower($split[0]);
             unset($split[0]);

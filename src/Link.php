@@ -10,7 +10,7 @@ use stdClass;
  *
  * @property string $column
  *   Trigger column that triggers this link
- * @property callable $callback
+ * @property ?callable $callback
  *    Method/function to call
  * @property array $field
  *    Fields to pull together
