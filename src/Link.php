@@ -6,11 +6,17 @@ use BadMethodCallException;
 use stdClass;
 
 /**
+ * Class to store Link data
  *
+ * @property string $column
+ *   Trigger column that triggers this link
+ * @property callable $callback
+ *    Method/function to call
+ * @property array $field
+ *    Fields to pull together
  */
 class Link
 {
-
     /**
      * Column that triggers this link
      *
@@ -23,7 +29,7 @@ class Link
      *
      * @var callable
      */
-    private $callback;
+    public $callback;
 
     /**
      * Variable to store the fields that need to be combined
@@ -55,9 +61,9 @@ class Link
      */
     public function trigger(stdClass $values)
     {
-        if (is_callable($this->callback)) {
-            return call_user_func($this->callback, $values);
+        if (!is_callable($this->callback)) {
+            return false;
         }
-        return $values;
+        return call_user_func($this->callback, $values);
     }
 }
